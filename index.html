@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LENS LOG — Photography Inventory</title>
+<title>LENS LOG</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -22,6 +22,10 @@
     --out: #8b1a1a;
     --out-bg: #fde8e8;
     --tag-bg: #ede9e3;
+    --trip-active: #1e3a5f;
+    --trip-active-bg: #e8eef7;
+    --trip-done: #2a7a4b;
+    --trip-done-bg: #e8f5ee;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { background: var(--bg); color: var(--text); font-family: 'Syne', sans-serif; min-height: 100vh; }
@@ -38,13 +42,24 @@
   .logo-icon { width: 36px; height: 36px; border: 2px solid var(--accent2); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 18px; }
   .logo-text { font-size: 22px; font-weight: 800; letter-spacing: 3px; text-transform: uppercase; }
   .logo-text span { color: var(--accent2); }
-  .header-stats { display: flex; margin-left: auto; }
+  .header-stats { display: flex; }
   .hstat { padding: 0 28px; display: flex; flex-direction: column; justify-content: center; border-left: 1px solid rgba(255,255,255,0.1); text-align: center; }
   .hstat-val { font-family: 'DM Mono', monospace; font-size: 20px; font-weight: 500; color: #fff; }
-  .hstat-val.warn { color: #f5a470; }
   .hstat-label { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: rgba(255,255,255,0.45); margin-top: 2px; }
 
-  .app { display: grid; grid-template-columns: 280px 1fr; min-height: calc(100vh - 64px); }
+  /* NAV */
+  .header-nav { display: flex; margin-left: auto; }
+  .nav-btn { padding: 0 24px; background: transparent; border: none; color: rgba(255,255,255,0.55); font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; cursor: pointer; border-bottom: 3px solid transparent; transition: all 0.15s; display: flex; align-items: center; gap: 8px; }
+  .nav-btn:hover { color: #fff; }
+  .nav-btn.active { color: #fff; border-bottom-color: var(--accent2); }
+
+  /* PAGES */
+  .page { display: none; }
+  .page.active { display: flex; }
+
+  /* INVENTORY PAGE */
+  #page-inventory { min-height: calc(100vh - 64px); }
+  .app { display: grid; grid-template-columns: 280px 1fr; min-height: calc(100vh - 64px); width: 100%; }
 
   aside { background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; overflow-y: auto; }
   .sidebar-section { padding: 24px; border-bottom: 1px solid var(--border); }
@@ -84,10 +99,6 @@
   .vbtn { padding: 8px 14px; background: transparent; border: none; color: var(--muted); cursor: pointer; font-size: 15px; transition: all 0.15s; }
   .vbtn.active { background: var(--accent); color: #fff; }
 
-  .alerts-bar { background: var(--warn-bg); border: 1.5px solid #f5c5a0; border-radius: 6px; padding: 11px 18px; display: flex; align-items: center; gap: 10px; font-size: 13px; font-weight: 600; color: var(--warn); }
-  .alert-dot { width: 8px; height: 8px; background: var(--warn); border-radius: 50%; flex-shrink: 0; animation: pulse 1.8s infinite; }
-  @keyframes pulse { 0%,100%{opacity:1}50%{opacity:0.3} }
-
   .table-container { background: var(--surface); border: 1.5px solid var(--border); border-radius: 8px; overflow: hidden; }
   .table-wrap { overflow-x: auto; }
   table { width: 100%; border-collapse: collapse; font-size: 14px; }
@@ -108,12 +119,6 @@
   .qty-btn { width: 26px; height: 26px; background: var(--surface2); border: 1.5px solid var(--border); border-radius: 4px; cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; transition: all 0.12s; color: var(--text); line-height: 1; }
   .qty-btn:hover { background: var(--accent); border-color: var(--accent); color: #fff; }
 
-  .status-badge { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; }
-  .st-ok { background: var(--ok-bg); color: var(--ok); }
-  .st-low { background: var(--warn-bg); color: var(--warn); }
-  .st-out { background: var(--out-bg); color: var(--out); }
-  .status-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
-
   .cond-badge { display: inline-block; padding: 3px 9px; font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; border-radius: 3px; background: var(--tag-bg); color: var(--muted); }
   .cond-mint { background: #e8f5ee; color: var(--ok); }
   .cond-good { background: #eef5e8; color: #4a7a2a; }
@@ -126,7 +131,7 @@
   .item-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; }
   .grid-card { background: var(--surface); border: 1.5px solid var(--border); border-radius: 8px; padding: 20px; transition: all 0.2s; }
   .grid-card:hover { border-color: var(--accent2); box-shadow: 0 4px 20px rgba(0,0,0,0.08); transform: translateY(-2px); }
-  .gc-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+  .gc-header { display: flex; justify-content: flex-end; align-items: flex-start; margin-bottom: 12px; }
   .gc-name { font-size: 16px; font-weight: 700; margin-bottom: 3px; }
   .gc-cat { font-size: 12px; color: var(--muted); margin-bottom: 14px; }
   .gc-mid { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; padding: 10px 0; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
@@ -137,9 +142,11 @@
   .gc-foot { display: flex; gap: 6px; margin-top: 14px; }
   .gc-foot button { flex: 1; }
 
+  /* MODAL */
   .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center; backdrop-filter: blur(2px); }
   .modal-overlay.open { display: flex; }
   .modal { background: var(--surface); border-radius: 10px; padding: 32px; width: 520px; max-width: 95vw; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.2); animation: modalIn 0.2s ease; }
+  .modal-wide { width: 700px; }
   @keyframes modalIn { from{transform:translateY(-16px);opacity:0}to{transform:translateY(0);opacity:1} }
   .modal-title { font-size: 20px; font-weight: 800; letter-spacing: 1px; margin-bottom: 24px; padding-bottom: 14px; border-bottom: 2px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
   .modal-close { background: none; border: none; font-size: 20px; cursor: pointer; color: var(--muted); }
@@ -156,11 +163,89 @@
   .toast { position: fixed; bottom: 28px; right: 28px; padding: 12px 22px; background: var(--accent); color: #fff; font-size: 13px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; border-radius: 6px; z-index: 9999; box-shadow: 0 8px 24px rgba(0,0,0,0.18); animation: toastIn 0.25s ease; }
   @keyframes toastIn { from{transform:translateY(16px);opacity:0}to{transform:translateY(0);opacity:1} }
 
+  /* ========== TRIPS PAGE ========== */
+  #page-trips { flex-direction: column; min-height: calc(100vh - 64px); background: var(--bg); }
+
+  .trips-layout { display: grid; grid-template-columns: 320px 1fr; min-height: calc(100vh - 64px); }
+
+  .trips-sidebar { background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; overflow-y: auto; }
+
+  .trips-list { padding: 16px; display: flex; flex-direction: column; gap: 8px; flex: 1; }
+
+  .trip-card-thumb { border: 1.5px solid var(--border); border-radius: 8px; padding: 14px 16px; cursor: pointer; transition: all 0.15s; }
+  .trip-card-thumb:hover { border-color: var(--accent2); background: var(--surface2); }
+  .trip-card-thumb.selected { border-color: var(--accent); background: var(--surface2); box-shadow: 0 0 0 2px rgba(26,26,26,0.1); }
+  .trip-thumb-name { font-weight: 700; font-size: 15px; margin-bottom: 4px; }
+  .trip-thumb-meta { font-size: 12px; color: var(--muted); display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 8px; }
+  .trip-thumb-foot { display: flex; align-items: center; justify-content: space-between; }
+
+  .trip-status { display: inline-flex; align-items: center; gap: 5px; padding: 3px 9px; border-radius: 20px; font-size: 10px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; }
+  .ts-planned { background: var(--tag-bg); color: var(--muted); }
+  .ts-active { background: var(--trip-active-bg); color: var(--trip-active); }
+  .ts-done { background: var(--trip-done-bg); color: var(--trip-done); }
+
+  .trips-main { padding: 28px 32px; display: flex; flex-direction: column; gap: 20px; overflow-y: auto; }
+
+  .trip-detail-header { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 12px; }
+  .trip-detail-title { font-size: 26px; font-weight: 800; }
+  .trip-detail-meta { font-size: 13px; color: var(--muted); margin-top: 4px; }
+  .trip-detail-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+  .btn-inline { padding: 9px 18px; font-family: 'Syne', sans-serif; font-size: 12px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; cursor: pointer; border: none; border-radius: 4px; transition: all 0.15s; white-space: nowrap; }
+  .btn-inline-primary { background: var(--accent); color: #fff; }
+  .btn-inline-primary:hover { background: #333; }
+  .btn-inline-ghost { background: transparent; color: var(--muted); border: 1.5px solid var(--border); }
+  .btn-inline-ghost:hover { border-color: var(--accent); color: var(--accent); }
+  .btn-inline-danger { background: transparent; color: var(--out); border: 1.5px solid #f5c5c5; }
+  .btn-inline-danger:hover { background: var(--out); color: #fff; }
+  .btn-inline-success { background: var(--ok); color: #fff; }
+  .btn-inline-success:hover { background: #1d5c38; }
+  .btn-inline-orange { background: var(--accent2); color: #fff; }
+  .btn-inline-orange:hover { background: #8f4420; }
+
+  .section-card { background: var(--surface); border: 1.5px solid var(--border); border-radius: 8px; overflow: hidden; }
+  .section-card-header { display: flex; justify-content: space-between; align-items: center; padding: 14px 20px; background: var(--surface2); border-bottom: 1.5px solid var(--border); }
+  .section-card-title { font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); }
+
+  .gear-row { display: flex; align-items: center; gap: 14px; padding: 12px 20px; border-bottom: 1px solid var(--border); }
+  .gear-row:last-child { border-bottom: none; }
+  .gear-row-name { font-weight: 600; flex: 1; }
+  .gear-row-cat { font-size: 12px; color: var(--muted); }
+  .gear-row-qty { font-family: 'DM Mono', monospace; font-size: 18px; font-weight: 500; min-width: 50px; text-align: center; }
+  .gear-row-qty.loaded { color: var(--trip-active); }
+  .gear-row-qty.unloaded { color: var(--ok); }
+  .gear-row-qty.partial { color: var(--warn); }
+
+  /* Load equipment picker */
+  .equip-picker { display: flex; flex-direction: column; gap: 8px; max-height: 360px; overflow-y: auto; }
+  .equip-picker-item { display: flex; align-items: center; gap: 12px; padding: 10px 14px; border: 1.5px solid var(--border); border-radius: 6px; cursor: pointer; transition: all 0.15s; }
+  .equip-picker-item:hover { border-color: var(--accent); background: var(--surface2); }
+  .equip-picker-item.selected { border-color: var(--accent); background: var(--surface2); }
+  .epi-name { font-weight: 600; flex: 1; font-size: 14px; }
+  .epi-cat { font-size: 11px; color: var(--muted); }
+  .epi-avail { font-family: 'DM Mono', monospace; font-size: 13px; color: var(--muted); }
+  .epi-qty-input { width: 60px; padding: 5px 8px; font-size: 13px; text-align: center; }
+
+  .trip-empty { text-align: center; padding: 80px 40px; }
+  .trip-empty-icon { font-size: 56px; margin-bottom: 16px; }
+  .trip-empty-title { font-size: 20px; font-weight: 800; margin-bottom: 8px; }
+  .trip-empty-sub { color: var(--muted); font-size: 14px; }
+
+  .summary-bar { display: flex; gap: 20px; flex-wrap: wrap; }
+  .sbar-item { background: var(--surface); border: 1.5px solid var(--border); border-radius: 8px; padding: 14px 20px; display: flex; flex-direction: column; gap: 3px; min-width: 120px; }
+  .sbar-val { font-family: 'DM Mono', monospace; font-size: 26px; font-weight: 500; }
+  .sbar-label { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); }
+
+  .del-trip-thumb { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 14px; padding: 2px 4px; border-radius: 3px; transition: all 0.12s; }
+  .del-trip-thumb:hover { background: var(--out-bg); color: var(--out); }
+
   .hidden { display: none !important; }
 
   @media (max-width: 800px) {
     .app { grid-template-columns: 1fr; }
     aside { display: none; }
+    .trips-layout { grid-template-columns: 1fr; }
+    .trips-sidebar { display: none; }
   }
 </style>
 </head>
@@ -178,123 +263,151 @@
     </div>
     <div class="hstat">
       <div class="hstat-val" id="stat-units">0</div>
-      <div class="hstat-label">Total Units</div>
-    </div>
-    <div class="hstat">
-      <div class="hstat-val warn" id="stat-low">0</div>
-      <div class="hstat-label">Low / Out</div>
+      <div class="hstat-label">Units</div>
     </div>
     <div class="hstat">
       <div class="hstat-val" id="stat-cats">0</div>
       <div class="hstat-label">Categories</div>
     </div>
+    <div class="hstat">
+      <div class="hstat-val" id="stat-trips">0</div>
+      <div class="hstat-label">Active Trips</div>
+    </div>
+  </div>
+  <div class="header-nav">
+    <button class="nav-btn active" id="nav-inventory" onclick="showPage('inventory')">📦 Inventory</button>
+    <button class="nav-btn" id="nav-trips" onclick="showPage('trips')">✈️ Trips</button>
   </div>
 </header>
 
-<div class="app">
-  <aside>
-    <div class="sidebar-section">
-      <div class="section-label">Add Equipment</div>
-      <div class="form-row"><label>Item Name *</label><input type="text" id="inp-name" placeholder="e.g. Sony A7 IV"></div>
-      <div class="form-row">
-        <label>Category</label>
-        <select id="inp-cat">
-          <option value="">Select category…</option>
-          <option>Cameras</option><option>Lenses</option><option>Lighting</option>
-          <option>Tripods & Support</option><option>Audio</option><option>Storage & Media</option>
-          <option>Batteries & Power</option><option>Bags & Cases</option><option>Filters</option>
-          <option>Accessories</option><option>Studio Props</option><option>Other</option>
+<!-- INVENTORY PAGE -->
+<div class="page active" id="page-inventory">
+  <div class="app">
+    <aside>
+      <div class="sidebar-section">
+        <div class="section-label">Add Equipment</div>
+        <div class="form-row"><label>Item Name *</label><input type="text" id="inp-name" placeholder="e.g. Sony A7 IV"></div>
+        <div class="form-row">
+          <label>Category</label>
+          <select id="inp-cat">
+            <option value="">Select category…</option>
+            <option>Cameras</option><option>Lenses</option><option>Lighting</option>
+            <option>Tripods & Support</option><option>Audio</option><option>Storage & Media</option>
+            <option>Batteries & Power</option><option>Bags & Cases</option><option>Filters</option>
+            <option>Accessories</option><option>Studio Props</option><option>Other</option>
+          </select>
+        </div>
+        <div class="form-row"><label>Quantity *</label><input type="number" id="inp-qty" placeholder="1" min="0"></div>
+        <div class="form-row">
+          <label>Condition</label>
+          <select id="inp-cond">
+            <option value="">Select…</option>
+            <option value="Mint">Mint</option><option value="Good">Good</option>
+            <option value="Fair">Fair</option><option value="Poor">Poor</option>
+          </select>
+        </div>
+        <div class="form-row"><label>Serial / Asset No.</label><input type="text" id="inp-serial" placeholder="e.g. SN-20450821"></div>
+        <div class="form-row"><label>Storage Location</label><input type="text" id="inp-location" placeholder="e.g. Studio Shelf A2"></div>
+        <div class="form-row"><label>Notes</label><textarea id="inp-notes" placeholder="Accessories included, known issues…"></textarea></div>
+        <button class="btn btn-primary" onclick="addItem()">+ Add Equipment</button>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="section-label">Filter by Category</div>
+        <div id="cat-list"></div>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="section-label">Export</div>
+        <button class="btn btn-primary" onclick="exportCSV()" style="margin-bottom:8px">Export CSV</button>
+        <button class="btn btn-ghost" onclick="exportJSON()">Export JSON</button>
+      </div>
+    </aside>
+
+    <div class="content">
+      <div class="toolbar">
+        <div class="search-wrap">
+          <span class="search-icon">🔍</span>
+          <input type="text" id="search-input" placeholder="Search equipment…" oninput="renderItems()">
+        </div>
+        <select id="sort-select" onchange="renderItems()">
+          <option value="name">Sort: Name</option>
+          <option value="qty">Sort: Quantity</option>
+          <option value="cat">Sort: Category</option>
+          <option value="cond">Sort: Condition</option>
+          <option value="date">Sort: Date Added</option>
         </select>
-      </div>
-      <div class="form-row"><label>Quantity *</label><input type="number" id="inp-qty" placeholder="1" min="0"></div>
-      <div class="form-row">
-        <label>Condition</label>
-        <select id="inp-cond">
-          <option value="">Select…</option>
-          <option value="Mint">Mint</option><option value="Good">Good</option>
-          <option value="Fair">Fair</option><option value="Poor">Poor</option>
+        <select id="sort-dir" onchange="renderItems()">
+          <option value="asc">↑ Asc</option>
+          <option value="desc">↓ Desc</option>
         </select>
+        <div class="view-toggle">
+          <button class="vbtn active" id="vbtn-table" onclick="switchView('table')" title="Table">☰</button>
+          <button class="vbtn" id="vbtn-grid" onclick="switchView('grid')" title="Grid">⊞</button>
+        </div>
       </div>
-      <div class="form-row"><label>Serial / Asset No.</label><input type="text" id="inp-serial" placeholder="e.g. SN-20450821"></div>
-      <div class="form-row"><label>Storage Location</label><input type="text" id="inp-location" placeholder="e.g. Studio Shelf A2"></div>
-      <div class="form-row"><label>Notes</label><textarea id="inp-notes" placeholder="Accessories included, known issues…"></textarea></div>
-      <button class="btn btn-primary" onclick="addItem()">+ Add Equipment</button>
-    </div>
 
-    <div class="sidebar-section">
-      <div class="section-label">Filter by Category</div>
-      <div id="cat-list"></div>
-    </div>
-
-    <div class="sidebar-section">
-      <div class="section-label">Export</div>
-      <button class="btn btn-primary" onclick="exportCSV()" style="margin-bottom:8px">Export CSV</button>
-      <button class="btn btn-ghost" onclick="exportJSON()">Export JSON</button>
-    </div>
-  </aside>
-
-  <div class="content">
-    <div id="alerts-bar" class="alerts-bar hidden">
-      <div class="alert-dot"></div>
-      <span id="alerts-text"></span>
-    </div>
-
-    <div class="toolbar">
-      <div class="search-wrap">
-        <span class="search-icon">🔍</span>
-        <input type="text" id="search-input" placeholder="Search equipment…" oninput="renderItems()">
+      <div id="table-view" class="table-container">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th onclick="sortBy('name')">Item</th>
+                <th onclick="sortBy('cat')">Category</th>
+                <th onclick="sortBy('qty')">Quantity</th>
+                <th onclick="sortBy('cond')">Condition</th>
+                <th>Location</th>
+                <th>Serial / Asset</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="table-body"></tbody>
+          </table>
+        </div>
+        <div id="table-empty" class="empty hidden">
+          <div class="empty-icon">📷</div>
+          <div class="empty-text">No equipment found</div>
+        </div>
       </div>
-      <select id="sort-select" onchange="renderItems()">
-        <option value="name">Sort: Name</option>
-        <option value="qty">Sort: Quantity</option>
-        <option value="cat">Sort: Category</option>
-        <option value="cond">Sort: Condition</option>
-        <option value="date">Sort: Date Added</option>
-      </select>
-      <select id="sort-dir" onchange="renderItems()">
-        <option value="asc">↑ Asc</option>
-        <option value="desc">↓ Desc</option>
-      </select>
-      <div class="view-toggle">
-        <button class="vbtn active" id="vbtn-table" onclick="switchView('table')" title="Table">☰</button>
-        <button class="vbtn" id="vbtn-grid" onclick="switchView('grid')" title="Grid">⊞</button>
-      </div>
-    </div>
 
-    <div id="table-view" class="table-container">
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th onclick="sortBy('name')">Item</th>
-              <th onclick="sortBy('cat')">Category</th>
-              <th onclick="sortBy('qty')">Quantity</th>
-              <th onclick="sortBy('cond')">Condition</th>
-              <th>Location</th>
-              <th>Serial / Asset</th>
-              <th>Status</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody id="table-body"></tbody>
-        </table>
-      </div>
-      <div id="table-empty" class="empty hidden">
-        <div class="empty-icon">📷</div>
-        <div class="empty-text">No equipment found</div>
-      </div>
+      <div id="grid-view" class="item-grid hidden"></div>
     </div>
-
-    <div id="grid-view" class="item-grid hidden"></div>
   </div>
 </div>
 
-<!-- EDIT MODAL -->
+<!-- TRIPS PAGE -->
+<div class="page" id="page-trips">
+  <div class="trips-layout">
+    <div class="trips-sidebar">
+      <div class="sidebar-section">
+        <div class="section-label">New Trip</div>
+        <div class="form-row"><label>Trip Name *</label><input type="text" id="trip-inp-name" placeholder="e.g. NYC Fashion Shoot"></div>
+        <div class="form-row"><label>Location</label><input type="text" id="trip-inp-loc" placeholder="e.g. Brooklyn, NY"></div>
+        <div class="form-row"><label>Date</label><input type="date" id="trip-inp-date"></div>
+        <div class="form-row"><label>Notes</label><textarea id="trip-inp-notes" placeholder="Client, brief, directions…" style="min-height:50px"></textarea></div>
+        <button class="btn btn-primary" onclick="createTrip()">+ Create Trip</button>
+      </div>
+      <div class="trips-list" id="trips-list">
+        <div style="text-align:center;padding:20px;color:var(--muted);font-size:13px">No trips yet</div>
+      </div>
+    </div>
+
+    <div class="trips-main" id="trips-main">
+      <div class="trip-empty">
+        <div class="trip-empty-icon">✈️</div>
+        <div class="trip-empty-title">Select or Create a Trip</div>
+        <div class="trip-empty-sub">Create a trip on the left, then load your equipment into it.<br>When you return, unload it all at once.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- EDIT ITEM MODAL -->
 <div class="modal-overlay" id="edit-modal">
   <div class="modal">
     <div class="modal-title">
       Edit Equipment
-      <button class="modal-close" onclick="closeModal()">✕</button>
+      <button class="modal-close" onclick="closeModal('edit-modal')">✕</button>
     </div>
     <input type="hidden" id="edit-id">
     <div class="modal-grid">
@@ -323,27 +436,57 @@
       <div class="modal-full form-row"><label>Notes</label><textarea id="edit-notes"></textarea></div>
     </div>
     <div class="modal-actions">
-      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-ghost" onclick="closeModal('edit-modal')">Cancel</button>
       <button class="btn btn-primary" onclick="saveEdit()">Save Changes</button>
     </div>
   </div>
 </div>
 
+<!-- LOAD EQUIPMENT MODAL -->
+<div class="modal-overlay" id="load-modal">
+  <div class="modal modal-wide">
+    <div class="modal-title">
+      Load Equipment into Trip
+      <button class="modal-close" onclick="closeModal('load-modal')">✕</button>
+    </div>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:16px">Select equipment and specify how many units to load. This will deduct from your inventory.</p>
+    <div class="form-row">
+      <input type="text" id="load-search" placeholder="Filter equipment…" oninput="renderLoadPicker()">
+    </div>
+    <div class="equip-picker" id="equip-picker"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('load-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="confirmLoad()">Load Selected Equipment</button>
+    </div>
+  </div>
+</div>
+
 <script>
+  // ========================= DATA =========================
   let items = JSON.parse(localStorage.getItem('ll_items') || '[]');
+  let trips = JSON.parse(localStorage.getItem('ll_trips') || '[]');
   let currentCat = 'all';
   let currentView = 'table';
   let sortField = 'name';
   let sortDir = 'asc';
+  let selectedTripId = null;
+  let loadSelections = {}; // itemId -> qty to load
 
-  function save() { localStorage.setItem('ll_items', JSON.stringify(items)); }
-
-  function getStatus(i) {
-    if (i.qty === 0) return { label: 'Out of Stock', cls: 'st-out' };
-    if (i.qty === 1) return { label: 'Low', cls: 'st-low' };
-    return { label: 'Available', cls: 'st-ok' };
+  function save() {
+    localStorage.setItem('ll_items', JSON.stringify(items));
+    localStorage.setItem('ll_trips', JSON.stringify(trips));
   }
 
+  // ========================= PAGE NAV =========================
+  function showPage(page) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('page-' + page).classList.add('active');
+    document.getElementById('nav-' + page).classList.add('active');
+    if (page === 'trips') renderTripsPage();
+  }
+
+  // ========================= INVENTORY =========================
   function condClass(c) {
     return { Mint: 'cond-mint', Good: 'cond-good', Fair: 'cond-fair', Poor: 'cond-poor' }[c] || '';
   }
@@ -414,7 +557,7 @@
     document.getElementById('edit-modal').classList.add('open');
   }
 
-  function closeModal() { document.getElementById('edit-modal').classList.remove('open'); }
+  function closeModal(id) { document.getElementById(id).classList.remove('open'); }
 
   function saveEdit() {
     const id = parseInt(document.getElementById('edit-id').value);
@@ -426,7 +569,7 @@
     i.serial = document.getElementById('edit-serial').value.trim();
     i.location = document.getElementById('edit-location').value.trim();
     i.notes = document.getElementById('edit-notes').value.trim();
-    save(); closeModal(); renderAll(); showToast('Updated!');
+    save(); closeModal('edit-modal'); renderAll(); showToast('Updated!');
   }
 
   function adjustQty(id, delta) {
@@ -458,13 +601,13 @@
     renderItems();
   }
 
-  function renderAll() { renderStats(); renderCategories(); renderAlerts(); renderItems(); }
+  function renderAll() { renderStats(); renderCategories(); renderItems(); }
 
   function renderStats() {
     document.getElementById('stat-total').textContent = items.length;
     document.getElementById('stat-units').textContent = items.reduce((s,i)=>s+i.qty,0);
-    document.getElementById('stat-low').textContent = items.filter(i=>i.qty<=1).length;
     document.getElementById('stat-cats').textContent = [...new Set(items.map(i=>i.cat))].length;
+    document.getElementById('stat-trips').textContent = trips.filter(t=>t.status==='active').length;
   }
 
   function renderCategories() {
@@ -477,19 +620,6 @@
     });
   }
 
-  function renderAlerts() {
-    const low = items.filter(i=>i.qty<=1);
-    const bar = document.getElementById('alerts-bar');
-    if (low.length) {
-      bar.classList.remove('hidden');
-      const out=low.filter(i=>i.qty===0), lo=low.filter(i=>i.qty===1);
-      let parts=[];
-      if(out.length) parts.push(`${out.length} out of stock`);
-      if(lo.length) parts.push(`${lo.length} with 1 unit`);
-      document.getElementById('alerts-text').textContent = parts.join(' · ') + ' — ' + low.map(i=>i.name).slice(0,4).join(', ')+(low.length>4?'…':'');
-    } else bar.classList.add('hidden');
-  }
-
   function renderItems() {
     const filtered = getFiltered();
     if (currentView==='table') {
@@ -497,7 +627,7 @@
       if (!filtered.length) { tbody.innerHTML=''; empty.classList.remove('hidden'); return; }
       empty.classList.add('hidden');
       tbody.innerHTML = filtered.map(i=>{
-        const st=getStatus(i), cc=condClass(i.cond);
+        const cc=condClass(i.cond);
         return `<tr>
           <td><div class="item-name">${esc(i.name)}</div>${i.notes?`<div class="item-sub">${esc(i.notes.substring(0,55))}${i.notes.length>55?'…':''}</div>`:''}</td>
           <td><span style="font-size:13px;font-weight:600">${esc(i.cat||'—')}</span></td>
@@ -509,7 +639,6 @@
           <td>${i.cond?`<span class="cond-badge ${cc}">${esc(i.cond)}</span>`:'<span style="color:var(--muted);font-size:12px">—</span>'}</td>
           <td>${i.location?`<span class="loc-tag">📍 ${esc(i.location)}</span>`:'<span style="color:var(--muted);font-size:12px">—</span>'}</td>
           <td>${i.serial?`<span class="sku-tag">${esc(i.serial)}</span>`:'<span style="color:var(--muted);font-size:12px">—</span>'}</td>
-          <td><span class="status-badge ${st.cls}"><span class="status-dot"></span>${st.label}</span></td>
           <td><div class="actions">
             <button class="btn-sm-edit" onclick="openEdit(${i.id})">Edit</button>
             <button class="btn-sm-del" onclick="deleteItem(${i.id})">Remove</button>
@@ -520,10 +649,9 @@
       const grid=document.getElementById('grid-view');
       if (!filtered.length) { grid.innerHTML='<div class="empty"><div class="empty-icon">📷</div><div class="empty-text">No equipment found</div></div>'; return; }
       grid.innerHTML = filtered.map(i=>{
-        const st=getStatus(i), cc=condClass(i.cond);
+        const cc=condClass(i.cond);
         return `<div class="grid-card">
           <div class="gc-header">
-            <span class="status-badge ${st.cls}"><span class="status-dot"></span>${st.label}</span>
             ${i.cond?`<span class="cond-badge ${cc}">${esc(i.cond)}</span>`:''}
           </div>
           <div class="gc-name">${esc(i.name)}</div>
@@ -547,26 +675,288 @@
     }
   }
 
-  function showToast(msg) {
-    const old=document.querySelector('.toast'); if(old) old.remove();
-    const t=document.createElement('div'); t.className='toast'; t.textContent=msg;
-    document.body.appendChild(t); setTimeout(()=>t.remove(),2200);
+  // ========================= TRIPS =========================
+  function createTrip() {
+    const name = document.getElementById('trip-inp-name').value.trim();
+    if (!name) { showToast('Trip name is required!'); return; }
+    const trip = {
+      id: Date.now(),
+      name,
+      location: document.getElementById('trip-inp-loc').value.trim(),
+      date: document.getElementById('trip-inp-date').value,
+      notes: document.getElementById('trip-inp-notes').value.trim(),
+      status: 'planned', // planned | active | done
+      gear: [], // [{itemId, itemName, itemCat, qty}]
+      createdAt: new Date().toISOString()
+    };
+    trips.push(trip);
+    save();
+    ['trip-inp-name','trip-inp-loc','trip-inp-date','trip-inp-notes'].forEach(id => document.getElementById(id).value='');
+    selectedTripId = trip.id;
+    renderTripsPage();
+    renderStats();
+    showToast('Trip created!');
   }
 
+  function deleteTrip(id) {
+    const t = trips.find(x=>x.id===id);
+    if (!t) return;
+    // Return any loaded gear if trip is still active
+    if (t.status === 'active') {
+      if (!confirm('This trip has loaded equipment. Deleting it will NOT return the gear to inventory. Continue?')) return;
+    } else {
+      if (!confirm('Delete this trip?')) return;
+    }
+    trips = trips.filter(x=>x.id!==id);
+    if (selectedTripId === id) selectedTripId = null;
+    save();
+    renderTripsPage();
+    renderStats();
+    showToast('Trip deleted');
+  }
+
+  function selectTrip(id) {
+    selectedTripId = id;
+    renderTripsPage();
+  }
+
+  function renderTripsPage() {
+    renderTripsList();
+    renderTripDetail();
+  }
+
+  function renderTripsList() {
+    const el = document.getElementById('trips-list');
+    if (!trips.length) {
+      el.innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted);font-size:13px">No trips yet</div>';
+      return;
+    }
+    // Sort: active first, then planned, then done
+    const sorted = [...trips].sort((a,b) => {
+      const order = {active:0, planned:1, done:2};
+      return (order[a.status]||1) - (order[b.status]||1);
+    });
+    el.innerHTML = sorted.map(t => {
+      const scls = t.status==='active'?'ts-active':t.status==='done'?'ts-done':'ts-planned';
+      const slbl = t.status==='active'?'Active':t.status==='done'?'Done':'Planned';
+      const gearCount = t.gear.reduce((s,g)=>s+g.qty,0);
+      return `<div class="trip-card-thumb ${selectedTripId===t.id?'selected':''}" onclick="selectTrip(${t.id})">
+        <div class="trip-thumb-name">${esc(t.name)}</div>
+        <div class="trip-thumb-meta">
+          ${t.date?`<span>📅 ${t.date}</span>`:''}
+          ${t.location?`<span>📍 ${esc(t.location)}</span>`:''}
+          <span>🎒 ${gearCount} unit${gearCount!==1?'s':''}</span>
+        </div>
+        <div class="trip-thumb-foot">
+          <span class="trip-status ${scls}">${slbl}</span>
+          <button class="del-trip-thumb" onclick="event.stopPropagation();deleteTrip(${t.id})" title="Delete trip">✕</button>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  function renderTripDetail() {
+    const main = document.getElementById('trips-main');
+    if (!selectedTripId) {
+      main.innerHTML = `<div class="trip-empty">
+        <div class="trip-empty-icon">✈️</div>
+        <div class="trip-empty-title">Select or Create a Trip</div>
+        <div class="trip-empty-sub">Create a trip on the left, then load your equipment into it.<br>When you return, unload it all at once.</div>
+      </div>`;
+      return;
+    }
+    const t = trips.find(x=>x.id===selectedTripId);
+    if (!t) return;
+
+    const scls = t.status==='active'?'ts-active':t.status==='done'?'ts-done':'ts-planned';
+    const slbl = t.status==='active'?'Active':t.status==='done'?'Done':'Planned';
+    const totalUnits = t.gear.reduce((s,g)=>s+g.qty,0);
+    const totalLines = t.gear.length;
+
+    let actionBtns = '';
+    if (t.status === 'planned') {
+      actionBtns = `
+        <button class="btn-inline btn-inline-primary" onclick="openLoadModal()">+ Load Equipment</button>
+        <button class="btn-inline btn-inline-orange" onclick="setTripStatus(${t.id},'active')">Mark as Active</button>
+        <button class="btn-inline btn-inline-danger" onclick="deleteTrip(${t.id})">Delete Trip</button>
+      `;
+    } else if (t.status === 'active') {
+      actionBtns = `
+        <button class="btn-inline btn-inline-primary" onclick="openLoadModal()">+ Load More</button>
+        <button class="btn-inline btn-inline-success" onclick="unloadTrip(${t.id})">✓ Unload & Complete</button>
+        <button class="btn-inline btn-inline-danger" onclick="deleteTrip(${t.id})">Delete Trip</button>
+      `;
+    } else {
+      actionBtns = `<button class="btn-inline btn-inline-ghost" onclick="deleteTrip(${t.id})">Delete Trip</button>`;
+    }
+
+    let gearRows = '';
+    if (t.gear.length === 0) {
+      gearRows = `<div style="padding:24px;text-align:center;color:var(--muted);font-size:14px">No equipment loaded yet. Click "Load Equipment" to add gear.</div>`;
+    } else {
+      gearRows = t.gear.map(g => {
+        const item = items.find(x=>x.id===g.itemId);
+        return `<div class="gear-row">
+          <div style="flex:1">
+            <div class="gear-row-name">${esc(g.itemName)}</div>
+            <div class="gear-row-cat">${esc(g.itemCat||'')}</div>
+          </div>
+          <div class="gear-row-qty loaded">${g.qty} unit${g.qty!==1?'s':''}</div>
+          ${t.status !== 'done' ? `<button class="btn-sm-del" onclick="removeGearFromTrip(${t.id}, ${g.itemId})">Remove</button>` : ''}
+        </div>`;
+      }).join('');
+    }
+
+    main.innerHTML = `
+      <div class="trip-detail-header">
+        <div>
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:6px">
+            <div class="trip-detail-title">${esc(t.name)}</div>
+            <span class="trip-status ${scls}">${slbl}</span>
+          </div>
+          <div class="trip-detail-meta">
+            ${t.date?`📅 ${t.date} &nbsp;`:''}
+            ${t.location?`📍 ${esc(t.location)} &nbsp;`:''}
+            ${t.notes?`<span title="${esc(t.notes)}">📝 ${esc(t.notes.substring(0,60))}${t.notes.length>60?'…':''}</span>`:''}
+          </div>
+        </div>
+        <div class="trip-detail-actions">${actionBtns}</div>
+      </div>
+
+      <div class="summary-bar">
+        <div class="sbar-item">
+          <div class="sbar-val">${totalLines}</div>
+          <div class="sbar-label">Line Items</div>
+        </div>
+        <div class="sbar-item">
+          <div class="sbar-val">${totalUnits}</div>
+          <div class="sbar-label">Total Units</div>
+        </div>
+        <div class="sbar-item">
+          <div class="sbar-val">${slbl}</div>
+          <div class="sbar-label">Status</div>
+        </div>
+      </div>
+
+      <div class="section-card">
+        <div class="section-card-header">
+          <div class="section-card-title">Loaded Equipment</div>
+          ${t.status!=='done'&&t.gear.length?`<span style="font-size:12px;color:var(--muted)">${totalUnits} units loaded from inventory</span>`:''}
+          ${t.status==='done'?`<span style="font-size:12px;color:var(--ok)">✓ All equipment returned to inventory</span>`:''}
+        </div>
+        ${gearRows}
+      </div>
+    `;
+  }
+
+  function setTripStatus(id, status) {
+    const t = trips.find(x=>x.id===id);
+    if (t) { t.status = status; save(); renderTripsPage(); renderStats(); showToast('Trip status updated'); }
+  }
+
+  function removeGearFromTrip(tripId, itemId) {
+    const t = trips.find(x=>x.id===tripId); if(!t) return;
+    const gear = t.gear.find(g=>g.itemId===itemId); if(!gear) return;
+    if (!confirm(`Remove ${gear.itemName} from this trip? The quantity will be returned to inventory.`)) return;
+    // Return to inventory
+    const item = items.find(x=>x.id===itemId);
+    if (item) item.qty += gear.qty;
+    t.gear = t.gear.filter(g=>g.itemId!==itemId);
+    save(); renderAll(); renderTripsPage(); showToast('Gear removed and returned to inventory');
+  }
+
+  function unloadTrip(id) {
+    const t = trips.find(x=>x.id===id); if(!t) return;
+    if (!t.gear.length) { showToast('No gear to unload'); setTripStatus(id,'done'); return; }
+    if (!confirm(`Return all ${t.gear.reduce((s,g)=>s+g.qty,0)} units of equipment to inventory and mark this trip as done?`)) return;
+    // Return all gear to inventory
+    t.gear.forEach(g => {
+      const item = items.find(x=>x.id===g.itemId);
+      if (item) item.qty += g.qty;
+    });
+    t.status = 'done';
+    save(); renderAll(); renderTripsPage(); showToast('Equipment unloaded & trip completed! 🎉');
+  }
+
+  // ========================= LOAD MODAL =========================
+  function openLoadModal() {
+    if (!selectedTripId) return;
+    loadSelections = {};
+    document.getElementById('load-search').value = '';
+    renderLoadPicker();
+    document.getElementById('load-modal').classList.add('open');
+  }
+
+  function renderLoadPicker() {
+    const q = document.getElementById('load-search').value.toLowerCase();
+    const trip = trips.find(x=>x.id===selectedTripId);
+    const picker = document.getElementById('equip-picker');
+    const available = items.filter(i => i.qty > 0 && (!q || i.name.toLowerCase().includes(q) || (i.cat||'').toLowerCase().includes(q)));
+
+    if (!available.length) {
+      picker.innerHTML = `<div style="text-align:center;padding:20px;color:var(--muted)">No available equipment found</div>`;
+      return;
+    }
+
+    picker.innerHTML = available.map(i => {
+      const alreadyLoaded = trip ? trip.gear.find(g=>g.itemId===i.id) : null;
+      const sel = loadSelections[i.id];
+      return `<div class="equip-picker-item ${sel?'selected':''}" id="epi-${i.id}">
+        <div style="flex:1">
+          <div class="epi-name">${esc(i.name)}</div>
+          <div class="epi-cat">${esc(i.cat||'')} ${alreadyLoaded?`<span style="color:var(--warn)">(${alreadyLoaded.qty} already loaded)</span>`:''}</div>
+        </div>
+        <div class="epi-avail">avail: ${i.qty}</div>
+        <input class="epi-qty-input" type="number" min="0" max="${i.qty}" placeholder="qty" value="${sel||''}"
+          oninput="setLoadSel(${i.id}, this.value, ${i.qty})"
+          onclick="this.parentElement.classList.add('selected')"
+          style="width:70px;padding:6px 8px;font-size:13px;border-radius:4px;border:1.5px solid var(--border);background:var(--surface2)">
+      </div>`;
+    }).join('');
+  }
+
+  function setLoadSel(itemId, val, max) {
+    const n = Math.min(parseInt(val)||0, max);
+    if (n > 0) { loadSelections[itemId] = n; document.getElementById('epi-'+itemId).classList.add('selected'); }
+    else { delete loadSelections[itemId]; document.getElementById('epi-'+itemId).classList.remove('selected'); }
+  }
+
+  function confirmLoad() {
+    const t = trips.find(x=>x.id===selectedTripId); if(!t) return;
+    const entries = Object.entries(loadSelections);
+    if (!entries.length) { showToast('Select at least one item'); return; }
+    let loaded = 0;
+    entries.forEach(([id, qty]) => {
+      const itemId = parseInt(id);
+      const item = items.find(x=>x.id===itemId);
+      if (!item || qty<=0) return;
+      const actualQty = Math.min(qty, item.qty);
+      // Deduct from inventory
+      item.qty -= actualQty;
+      // Add/update in trip gear
+      const existing = t.gear.find(g=>g.itemId===itemId);
+      if (existing) existing.qty += actualQty;
+      else t.gear.push({ itemId, itemName: item.name, itemCat: item.cat, qty: actualQty });
+      loaded += actualQty;
+    });
+    // Auto-mark as active if still planned
+    if (t.status === 'planned' && t.gear.length > 0) t.status = 'active';
+    save(); closeModal('load-modal'); renderAll(); renderTripsPage();
+    showToast(`${loaded} unit${loaded!==1?'s':''} loaded into trip!`);
+  }
+
+  // ========================= EXPORT =========================
   function exportCSV() {
     if (!items.length) { showToast('Nothing to export'); return; }
-    const headers=['Name','Category','Quantity','Condition','Serial/Asset','Location','Status','Notes','Date Added'];
-    const rows=items.map(i=>{
-      const st=getStatus(i);
-      return [i.name,i.cat||'',i.qty,i.cond||'',i.serial||'',i.location||'',st.label,i.notes||'',i.date?new Date(i.date).toLocaleDateString():''];
-    });
+    const headers=['Name','Category','Quantity','Condition','Serial/Asset','Location','Notes','Date Added'];
+    const rows=items.map(i=>[i.name,i.cat||'',i.qty,i.cond||'',i.serial||'',i.location||'',i.notes||'',i.date?new Date(i.date).toLocaleDateString():'']);
     const csv=[headers,...rows].map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
     dl('lenslog_inventory.csv',csv,'text/csv'); showToast('CSV exported!');
   }
 
   function exportJSON() {
     if (!items.length) { showToast('Nothing to export'); return; }
-    dl('lenslog_inventory.json',JSON.stringify(items,null,2),'application/json'); showToast('JSON exported!');
+    dl('lenslog_inventory.json',JSON.stringify({items,trips},null,2),'application/json'); showToast('JSON exported!');
   }
 
   function dl(filename,content,type) {
@@ -575,10 +965,19 @@
     a.download=filename; a.click();
   }
 
-  document.getElementById('edit-modal').addEventListener('click',function(e){ if(e.target===this) closeModal(); });
-  document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeModal(); });
+  // ========================= TOAST =========================
+  function showToast(msg) {
+    const old=document.querySelector('.toast'); if(old) old.remove();
+    const t=document.createElement('div'); t.className='toast'; t.textContent=msg;
+    document.body.appendChild(t); setTimeout(()=>t.remove(),2200);
+  }
 
-  // Seed data
+  // ========================= EVENTS =========================
+  document.getElementById('edit-modal').addEventListener('click',function(e){ if(e.target===this) closeModal('edit-modal'); });
+  document.getElementById('load-modal').addEventListener('click',function(e){ if(e.target===this) closeModal('load-modal'); });
+  document.addEventListener('keydown',e=>{ if(e.key==='Escape') { closeModal('edit-modal'); closeModal('load-modal'); } });
+
+  // ========================= SEED DATA =========================
   if (!items.length) {
     [
       {name:'Sony A7 IV',cat:'Cameras',qty:2,cond:'Mint',serial:'SN-SOA7-0042',location:'Camera Shelf A1',notes:'Full frame, 33MP'},
@@ -586,9 +985,9 @@
       {name:'Sigma 24-70mm f/2.8 Art',cat:'Lenses',qty:1,cond:'Good',serial:'SG-2470-019',location:'Lens Cabinet B3',notes:'Slight dust on rear element'},
       {name:'Godox SL-60W LED',cat:'Lighting',qty:4,cond:'Good',serial:'',location:'Studio Rack C1',notes:''},
       {name:'Manfrotto 055XPRO3 Tripod',cat:'Tripods & Support',qty:2,cond:'Fair',serial:'',location:'Gear Closet D1',notes:'One missing rubber foot'},
-      {name:'Rode VideoMicro',cat:'Audio',qty:0,cond:'Good',serial:'RD-VM-007',location:'Audio Box E1',notes:'Sent in for repair'},
+      {name:'Rode VideoMicro',cat:'Audio',qty:2,cond:'Good',serial:'RD-VM-007',location:'Audio Box E1',notes:''},
       {name:'SanDisk Extreme 128GB SD',cat:'Storage & Media',qty:8,cond:'Good',serial:'',location:'Card Wallet F1',notes:''},
-      {name:'LP-E6NH Battery',cat:'Batteries & Power',qty:1,cond:'Fair',serial:'',location:'Charging Station G1',notes:'~70% capacity'},
+      {name:'LP-E6NH Battery',cat:'Batteries & Power',qty:4,cond:'Fair',serial:'',location:'Charging Station G1',notes:'~70% capacity'},
     ].forEach(s => items.push({id:Date.now()+Math.random(),date:new Date().toISOString(),...s}));
     save();
   }
