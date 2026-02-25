@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LENS LOG — Photography Inventory</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f5f2ee;
+    --surface: #fff;
+    --surface2: #f0ece6;
+    --border: #ddd8d0;
+    --accent: #1a1a1a;
+    --accent2: #b85c2a;
+    --text: #1a1a1a;
+    --muted: #888074;
+    --ok: #2a7a4b;
+    --ok-bg: #e8f5ee;
+    --warn: #b85c2a;
+    --warn-bg: #fdf0e8;
+    --out: #8b1a1a;
+    --out-bg: #fde8e8;
+    --tag-bg: #ede9e3;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'Syne', sans-serif; min-height: 100vh; }
+
+  header {
+    background: var(--accent);
+    color: #fff;
+    padding: 0 40px;
+    display: flex;
+    align-items: stretch;
+    min-height: 64px;
+  }
+  .logo-block { display: flex; align-items: center; gap: 14px; padding: 18px 0; margin-right: 40px; }
+  .logo-icon { width: 36px; height: 36px; border: 2px solid var(--accent2); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+  .logo-text { font-size: 22px; font-weight: 800; letter-spacing: 3px; text-transform: uppercase; }
+  .logo-text span { color: var(--accent2); }
+  .header-stats { display: flex; margin-left: auto; }
+  .hstat { padding: 0 28px; display: flex; flex-direction: column; justify-content: center; border-left: 1px solid rgba(255,255,255,0.1); text-align: center; }
+  .hstat-val { font-family: 'DM Mono', monospace; font-size: 20px; font-weight: 500; color: #fff; }
+  .hstat-val.warn { color: #f5a470; }
+  .hstat-label { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: rgba(255,255,255,0.45); margin-top: 2px; }
+
+  .app { display: grid; grid-template-columns: 280px 1fr; min-height: calc(100vh - 64px); }
+
+  aside { background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; overflow-y: auto; }
+  .sidebar-section { padding: 24px; border-bottom: 1px solid var(--border); }
+  .section-label { font-size: 10px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; color: var(--muted); margin-bottom: 16px; }
+  .form-row { margin-bottom: 12px; }
+  label { display: block; font-size: 11px; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); margin-bottom: 5px; }
+  input, select, textarea { width: 100%; background: var(--surface2); border: 1.5px solid var(--border); color: var(--text); padding: 9px 12px; font-family: 'Syne', sans-serif; font-size: 14px; outline: none; border-radius: 4px; transition: border-color 0.15s; }
+  input:focus, select:focus, textarea:focus { border-color: var(--accent); }
+  input::placeholder, textarea::placeholder { color: #bbb5ab; }
+  select option { background: #fff; }
+  textarea { resize: vertical; min-height: 60px; }
+
+  .btn { width: 100%; padding: 11px; font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; cursor: pointer; border: none; border-radius: 4px; transition: all 0.15s; }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover { background: #333; transform: translateY(-1px); }
+  .btn-ghost { background: transparent; color: var(--muted); border: 1.5px solid var(--border); }
+  .btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
+
+  .btn-sm-edit { background: transparent; color: var(--accent2); border: 1.5px solid #f5d5c0; padding: 6px 12px; font-size: 11px; letter-spacing: 1.5px; border-radius: 3px; cursor: pointer; font-family: 'Syne', sans-serif; font-weight: 700; text-transform: uppercase; transition: all 0.15s; }
+  .btn-sm-edit:hover { background: var(--accent2); color: #fff; }
+  .btn-sm-del { background: transparent; color: var(--out); border: 1.5px solid #f5c5c5; padding: 6px 12px; font-size: 11px; letter-spacing: 1.5px; border-radius: 3px; cursor: pointer; font-family: 'Syne', sans-serif; font-weight: 700; text-transform: uppercase; transition: all 0.15s; }
+  .btn-sm-del:hover { background: var(--out); color: #fff; border-color: var(--out); }
+
+  .cat-item { display: flex; justify-content: space-between; align-items: center; padding: 9px 12px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 600; transition: all 0.15s; margin-bottom: 3px; color: var(--muted); }
+  .cat-item:hover { background: var(--surface2); color: var(--text); }
+  .cat-item.active { background: var(--accent); color: #fff; }
+  .cat-count { font-family: 'DM Mono', monospace; font-size: 12px; padding: 2px 8px; border-radius: 12px; background: rgba(255,255,255,0.2); }
+  .cat-item:not(.active) .cat-count { background: var(--tag-bg); color: var(--muted); }
+
+  .content { padding: 28px 32px; display: flex; flex-direction: column; gap: 18px; }
+  .toolbar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .search-wrap { position: relative; flex: 1; min-width: 200px; max-width: 360px; }
+  .search-wrap input { padding-left: 36px; }
+  .search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--muted); font-size: 14px; pointer-events: none; }
+  .toolbar select { width: 165px; }
+  .view-toggle { margin-left: auto; display: flex; border: 1.5px solid var(--border); border-radius: 4px; overflow: hidden; }
+  .vbtn { padding: 8px 14px; background: transparent; border: none; color: var(--muted); cursor: pointer; font-size: 15px; transition: all 0.15s; }
+  .vbtn.active { background: var(--accent); color: #fff; }
+
+  .alerts-bar { background: var(--warn-bg); border: 1.5px solid #f5c5a0; border-radius: 6px; padding: 11px 18px; display: flex; align-items: center; gap: 10px; font-size: 13px; font-weight: 600; color: var(--warn); }
+  .alert-dot { width: 8px; height: 8px; background: var(--warn); border-radius: 50%; flex-shrink: 0; animation: pulse 1.8s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1}50%{opacity:0.3} }
+
+  .table-container { background: var(--surface); border: 1.5px solid var(--border); border-radius: 8px; overflow: hidden; }
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  thead th { padding: 10px 16px; text-align: left; font-size: 10px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); background: var(--surface2); cursor: pointer; white-space: nowrap; user-select: none; border-bottom: 2px solid var(--border); }
+  thead th:hover { color: var(--accent); }
+  thead th.sorted { color: var(--accent2); }
+  tbody tr { border-bottom: 1px solid var(--border); transition: background 0.1s; }
+  tbody tr:hover { background: var(--surface2); }
+  tbody tr:last-child { border-bottom: none; }
+  td { padding: 13px 16px; vertical-align: middle; }
+
+  .item-name { font-weight: 700; font-size: 15px; }
+  .item-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .sku-tag { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--muted); background: var(--tag-bg); padding: 2px 8px; border-radius: 3px; display: inline-block; }
+
+  .qty-cell { display: flex; align-items: center; gap: 6px; }
+  .qty-num { font-family: 'DM Mono', monospace; font-size: 18px; font-weight: 500; min-width: 36px; text-align: center; }
+  .qty-btn { width: 26px; height: 26px; background: var(--surface2); border: 1.5px solid var(--border); border-radius: 4px; cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; transition: all 0.12s; color: var(--text); line-height: 1; }
+  .qty-btn:hover { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+  .status-badge { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; }
+  .st-ok { background: var(--ok-bg); color: var(--ok); }
+  .st-low { background: var(--warn-bg); color: var(--warn); }
+  .st-out { background: var(--out-bg); color: var(--out); }
+  .status-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+
+  .cond-badge { display: inline-block; padding: 3px 9px; font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; border-radius: 3px; background: var(--tag-bg); color: var(--muted); }
+  .cond-mint { background: #e8f5ee; color: var(--ok); }
+  .cond-good { background: #eef5e8; color: #4a7a2a; }
+  .cond-fair { background: var(--warn-bg); color: var(--warn); }
+  .cond-poor { background: var(--out-bg); color: var(--out); }
+
+  .loc-tag { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; color: var(--muted); }
+  .actions { display: flex; gap: 6px; align-items: center; }
+
+  .item-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; }
+  .grid-card { background: var(--surface); border: 1.5px solid var(--border); border-radius: 8px; padding: 20px; transition: all 0.2s; }
+  .grid-card:hover { border-color: var(--accent2); box-shadow: 0 4px 20px rgba(0,0,0,0.08); transform: translateY(-2px); }
+  .gc-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+  .gc-name { font-size: 16px; font-weight: 700; margin-bottom: 3px; }
+  .gc-cat { font-size: 12px; color: var(--muted); margin-bottom: 14px; }
+  .gc-mid { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; padding: 10px 0; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+  .gc-qty-wrap { display: flex; align-items: center; gap: 8px; }
+  .gc-qty { font-family: 'DM Mono', monospace; font-size: 32px; font-weight: 500; line-height: 1; }
+  .gc-qty-label { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); }
+  .gc-serial { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--muted); margin-top: 8px; }
+  .gc-foot { display: flex; gap: 6px; margin-top: 14px; }
+  .gc-foot button { flex: 1; }
+
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center; backdrop-filter: blur(2px); }
+  .modal-overlay.open { display: flex; }
+  .modal { background: var(--surface); border-radius: 10px; padding: 32px; width: 520px; max-width: 95vw; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.2); animation: modalIn 0.2s ease; }
+  @keyframes modalIn { from{transform:translateY(-16px);opacity:0}to{transform:translateY(0);opacity:1} }
+  .modal-title { font-size: 20px; font-weight: 800; letter-spacing: 1px; margin-bottom: 24px; padding-bottom: 14px; border-bottom: 2px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+  .modal-close { background: none; border: none; font-size: 20px; cursor: pointer; color: var(--muted); }
+  .modal-close:hover { color: var(--text); }
+  .modal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .modal-full { grid-column: 1 / -1; }
+  .modal-actions { display: flex; gap: 10px; margin-top: 20px; }
+  .modal-actions .btn { flex: 1; }
+
+  .empty { text-align: center; padding: 60px 20px; color: var(--muted); }
+  .empty-icon { font-size: 44px; margin-bottom: 12px; }
+  .empty-text { font-size: 16px; letter-spacing: 1px; font-weight: 600; }
+
+  .toast { position: fixed; bottom: 28px; right: 28px; padding: 12px 22px; background: var(--accent); color: #fff; font-size: 13px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; border-radius: 6px; z-index: 9999; box-shadow: 0 8px 24px rgba(0,0,0,0.18); animation: toastIn 0.25s ease; }
+  @keyframes toastIn { from{transform:translateY(16px);opacity:0}to{transform:translateY(0);opacity:1} }
+
+  .hidden { display: none !important; }
+
+  @media (max-width: 800px) {
+    .app { grid-template-columns: 1fr; }
+    aside { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo-block">
+    <div class="logo-icon">📷</div>
+    <div class="logo-text">LENS<span>LOG</span></div>
+  </div>
+  <div class="header-stats">
+    <div class="hstat">
+      <div class="hstat-val" id="stat-total">0</div>
+      <div class="hstat-label">Items</div>
+    </div>
+    <div class="hstat">
+      <div class="hstat-val" id="stat-units">0</div>
+      <div class="hstat-label">Total Units</div>
+    </div>
+    <div class="hstat">
+      <div class="hstat-val warn" id="stat-low">0</div>
+      <div class="hstat-label">Low / Out</div>
+    </div>
+    <div class="hstat">
+      <div class="hstat-val" id="stat-cats">0</div>
+      <div class="hstat-label">Categories</div>
+    </div>
+  </div>
+</header>
+
+<div class="app">
+  <aside>
+    <div class="sidebar-section">
+      <div class="section-label">Add Equipment</div>
+      <div class="form-row"><label>Item Name *</label><input type="text" id="inp-name" placeholder="e.g. Sony A7 IV"></div>
+      <div class="form-row">
+        <label>Category</label>
+        <select id="inp-cat">
+          <option value="">Select category…</option>
+          <option>Cameras</option><option>Lenses</option><option>Lighting</option>
+          <option>Tripods & Support</option><option>Audio</option><option>Storage & Media</option>
+          <option>Batteries & Power</option><option>Bags & Cases</option><option>Filters</option>
+          <option>Accessories</option><option>Studio Props</option><option>Other</option>
+        </select>
+      </div>
+      <div class="form-row"><label>Quantity *</label><input type="number" id="inp-qty" placeholder="1" min="0"></div>
+      <div class="form-row">
+        <label>Condition</label>
+        <select id="inp-cond">
+          <option value="">Select…</option>
+          <option value="Mint">Mint</option><option value="Good">Good</option>
+          <option value="Fair">Fair</option><option value="Poor">Poor</option>
+        </select>
+      </div>
+      <div class="form-row"><label>Serial / Asset No.</label><input type="text" id="inp-serial" placeholder="e.g. SN-20450821"></div>
+      <div class="form-row"><label>Storage Location</label><input type="text" id="inp-location" placeholder="e.g. Studio Shelf A2"></div>
+      <div class="form-row"><label>Notes</label><textarea id="inp-notes" placeholder="Accessories included, known issues…"></textarea></div>
+      <button class="btn btn-primary" onclick="addItem()">+ Add Equipment</button>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="section-label">Filter by Category</div>
+      <div id="cat-list"></div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="section-label">Export</div>
+      <button class="btn btn-primary" onclick="exportCSV()" style="margin-bottom:8px">Export CSV</button>
+      <button class="btn btn-ghost" onclick="exportJSON()">Export JSON</button>
+    </div>
+  </aside>
+
+  <div class="content">
+    <div id="alerts-bar" class="alerts-bar hidden">
+      <div class="alert-dot"></div>
+      <span id="alerts-text"></span>
+    </div>
+
+    <div class="toolbar">
+      <div class="search-wrap">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="search-input" placeholder="Search equipment…" oninput="renderItems()">
+      </div>
+      <select id="sort-select" onchange="renderItems()">
+        <option value="name">Sort: Name</option>
+        <option value="qty">Sort: Quantity</option>
+        <option value="cat">Sort: Category</option>
+        <option value="cond">Sort: Condition</option>
+        <option value="date">Sort: Date Added</option>
+      </select>
+      <select id="sort-dir" onchange="renderItems()">
+        <option value="asc">↑ Asc</option>
+        <option value="desc">↓ Desc</option>
+      </select>
+      <div class="view-toggle">
+        <button class="vbtn active" id="vbtn-table" onclick="switchView('table')" title="Table">☰</button>
+        <button class="vbtn" id="vbtn-grid" onclick="switchView('grid')" title="Grid">⊞</button>
+      </div>
+    </div>
+
+    <div id="table-view" class="table-container">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th onclick="sortBy('name')">Item</th>
+              <th onclick="sortBy('cat')">Category</th>
+              <th onclick="sortBy('qty')">Quantity</th>
+              <th onclick="sortBy('cond')">Condition</th>
+              <th>Location</th>
+              <th>Serial / Asset</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="table-body"></tbody>
+        </table>
+      </div>
+      <div id="table-empty" class="empty hidden">
+        <div class="empty-icon">📷</div>
+        <div class="empty-text">No equipment found</div>
+      </div>
+    </div>
+
+    <div id="grid-view" class="item-grid hidden"></div>
+  </div>
+</div>
+
+<!-- EDIT MODAL -->
+<div class="modal-overlay" id="edit-modal">
+  <div class="modal">
+    <div class="modal-title">
+      Edit Equipment
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <input type="hidden" id="edit-id">
+    <div class="modal-grid">
+      <div class="modal-full form-row"><label>Item Name *</label><input type="text" id="edit-name"></div>
+      <div class="form-row">
+        <label>Category</label>
+        <select id="edit-cat">
+          <option value="">Select…</option>
+          <option>Cameras</option><option>Lenses</option><option>Lighting</option>
+          <option>Tripods & Support</option><option>Audio</option><option>Storage & Media</option>
+          <option>Batteries & Power</option><option>Bags & Cases</option><option>Filters</option>
+          <option>Accessories</option><option>Studio Props</option><option>Other</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <label>Condition</label>
+        <select id="edit-cond">
+          <option value="">Select…</option>
+          <option value="Mint">Mint</option><option value="Good">Good</option>
+          <option value="Fair">Fair</option><option value="Poor">Poor</option>
+        </select>
+      </div>
+      <div class="form-row"><label>Quantity</label><input type="number" id="edit-qty" min="0"></div>
+      <div class="form-row"><label>Serial / Asset No.</label><input type="text" id="edit-serial"></div>
+      <div class="modal-full form-row"><label>Storage Location</label><input type="text" id="edit-location"></div>
+      <div class="modal-full form-row"><label>Notes</label><textarea id="edit-notes"></textarea></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveEdit()">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  let items = JSON.parse(localStorage.getItem('ll_items') || '[]');
+  let currentCat = 'all';
+  let currentView = 'table';
+  let sortField = 'name';
+  let sortDir = 'asc';
+
+  function save() { localStorage.setItem('ll_items', JSON.stringify(items)); }
+
+  function getStatus(i) {
+    if (i.qty === 0) return { label: 'Out of Stock', cls: 'st-out' };
+    if (i.qty === 1) return { label: 'Low', cls: 'st-low' };
+    return { label: 'Available', cls: 'st-ok' };
+  }
+
+  function condClass(c) {
+    return { Mint: 'cond-mint', Good: 'cond-good', Fair: 'cond-fair', Poor: 'cond-poor' }[c] || '';
+  }
+
+  function esc(s) {
+    return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  function getFiltered() {
+    const q = document.getElementById('search-input').value.toLowerCase();
+    sortField = document.getElementById('sort-select').value;
+    sortDir = document.getElementById('sort-dir').value;
+    return items.filter(i => {
+      const mc = currentCat === 'all' || i.cat === currentCat;
+      const mq = !q || [i.name,i.cat,i.serial,i.location,i.notes].some(v => (v||'').toLowerCase().includes(q));
+      return mc && mq;
+    }).sort((a,b) => {
+      let va, vb;
+      if (sortField==='qty') { va=a.qty; vb=b.qty; }
+      else if (sortField==='cat') { va=a.cat||''; vb=b.cat||''; }
+      else if (sortField==='cond') { va=a.cond||''; vb=b.cond||''; }
+      else if (sortField==='date') { va=a.date||''; vb=b.date||''; }
+      else { va=a.name||''; vb=b.name||''; }
+      if (typeof va==='number') return sortDir==='asc'?va-vb:vb-va;
+      return sortDir==='asc'?va.localeCompare(vb):vb.localeCompare(va);
+    });
+  }
+
+  function addItem() {
+    const name = document.getElementById('inp-name').value.trim();
+    if (!name) { showToast('Item name is required!'); return; }
+    const qty = parseInt(document.getElementById('inp-qty').value);
+    if (isNaN(qty)||qty<0) { showToast('Enter a valid quantity'); return; }
+    items.push({
+      id: Date.now(),
+      name,
+      cat: document.getElementById('inp-cat').value || 'Other',
+      qty,
+      cond: document.getElementById('inp-cond').value,
+      serial: document.getElementById('inp-serial').value.trim(),
+      location: document.getElementById('inp-location').value.trim(),
+      notes: document.getElementById('inp-notes').value.trim(),
+      date: new Date().toISOString()
+    });
+    save();
+    ['inp-name','inp-qty','inp-serial','inp-location','inp-notes'].forEach(id => document.getElementById(id).value='');
+    document.getElementById('inp-cat').value='';
+    document.getElementById('inp-cond').value='';
+    renderAll(); showToast('Equipment added!');
+  }
+
+  function deleteItem(id) {
+    if (!confirm('Remove this item?')) return;
+    items = items.filter(i=>i.id!==id);
+    save(); renderAll(); showToast('Item removed');
+  }
+
+  function openEdit(id) {
+    const i = items.find(x=>x.id===id); if(!i) return;
+    document.getElementById('edit-id').value = id;
+    document.getElementById('edit-name').value = i.name;
+    document.getElementById('edit-cat').value = i.cat||'';
+    document.getElementById('edit-qty').value = i.qty;
+    document.getElementById('edit-cond').value = i.cond||'';
+    document.getElementById('edit-serial').value = i.serial||'';
+    document.getElementById('edit-location').value = i.location||'';
+    document.getElementById('edit-notes').value = i.notes||'';
+    document.getElementById('edit-modal').classList.add('open');
+  }
+
+  function closeModal() { document.getElementById('edit-modal').classList.remove('open'); }
+
+  function saveEdit() {
+    const id = parseInt(document.getElementById('edit-id').value);
+    const i = items.find(x=>x.id===id); if(!i) return;
+    i.name = document.getElementById('edit-name').value.trim()||i.name;
+    i.cat = document.getElementById('edit-cat').value||i.cat;
+    i.qty = parseInt(document.getElementById('edit-qty').value)||0;
+    i.cond = document.getElementById('edit-cond').value;
+    i.serial = document.getElementById('edit-serial').value.trim();
+    i.location = document.getElementById('edit-location').value.trim();
+    i.notes = document.getElementById('edit-notes').value.trim();
+    save(); closeModal(); renderAll(); showToast('Updated!');
+  }
+
+  function adjustQty(id, delta) {
+    const i = items.find(x=>x.id===id); if(!i) return;
+    i.qty = Math.max(0, i.qty+delta);
+    save(); renderAll();
+  }
+
+  function sortBy(field) {
+    if (sortField===field) sortDir = sortDir==='asc'?'desc':'asc';
+    else { sortField=field; sortDir='asc'; }
+    document.getElementById('sort-select').value=field;
+    document.getElementById('sort-dir').value=sortDir;
+    renderItems();
+  }
+
+  function filterCat(cat) {
+    currentCat=cat;
+    document.querySelectorAll('.cat-item').forEach(el=>el.classList.toggle('active',el.dataset.cat===cat));
+    renderItems();
+  }
+
+  function switchView(v) {
+    currentView=v;
+    document.getElementById('table-view').classList.toggle('hidden',v!=='table');
+    document.getElementById('grid-view').classList.toggle('hidden',v!=='grid');
+    document.getElementById('vbtn-table').classList.toggle('active',v==='table');
+    document.getElementById('vbtn-grid').classList.toggle('active',v==='grid');
+    renderItems();
+  }
+
+  function renderAll() { renderStats(); renderCategories(); renderAlerts(); renderItems(); }
+
+  function renderStats() {
+    document.getElementById('stat-total').textContent = items.length;
+    document.getElementById('stat-units').textContent = items.reduce((s,i)=>s+i.qty,0);
+    document.getElementById('stat-low').textContent = items.filter(i=>i.qty<=1).length;
+    document.getElementById('stat-cats').textContent = [...new Set(items.map(i=>i.cat))].length;
+  }
+
+  function renderCategories() {
+    const cats = [...new Set(items.map(i=>i.cat))].sort();
+    const cl = document.getElementById('cat-list');
+    cl.innerHTML = `<div class="cat-item ${currentCat==='all'?'active':''}" data-cat="all" onclick="filterCat('all')">All Equipment <span class="cat-count">${items.length}</span></div>`;
+    cats.forEach(c => {
+      const n = items.filter(i=>i.cat===c).length;
+      cl.innerHTML += `<div class="cat-item ${currentCat===c?'active':''}" data-cat="${esc(c)}" onclick="filterCat(${JSON.stringify(c)})">${esc(c)} <span class="cat-count">${n}</span></div>`;
+    });
+  }
+
+  function renderAlerts() {
+    const low = items.filter(i=>i.qty<=1);
+    const bar = document.getElementById('alerts-bar');
+    if (low.length) {
+      bar.classList.remove('hidden');
+      const out=low.filter(i=>i.qty===0), lo=low.filter(i=>i.qty===1);
+      let parts=[];
+      if(out.length) parts.push(`${out.length} out of stock`);
+      if(lo.length) parts.push(`${lo.length} with 1 unit`);
+      document.getElementById('alerts-text').textContent = parts.join(' · ') + ' — ' + low.map(i=>i.name).slice(0,4).join(', ')+(low.length>4?'…':'');
+    } else bar.classList.add('hidden');
+  }
+
+  function renderItems() {
+    const filtered = getFiltered();
+    if (currentView==='table') {
+      const tbody=document.getElementById('table-body'), empty=document.getElementById('table-empty');
+      if (!filtered.length) { tbody.innerHTML=''; empty.classList.remove('hidden'); return; }
+      empty.classList.add('hidden');
+      tbody.innerHTML = filtered.map(i=>{
+        const st=getStatus(i), cc=condClass(i.cond);
+        return `<tr>
+          <td><div class="item-name">${esc(i.name)}</div>${i.notes?`<div class="item-sub">${esc(i.notes.substring(0,55))}${i.notes.length>55?'…':''}</div>`:''}</td>
+          <td><span style="font-size:13px;font-weight:600">${esc(i.cat||'—')}</span></td>
+          <td><div class="qty-cell">
+            <button class="qty-btn" onclick="adjustQty(${i.id},-1)">−</button>
+            <span class="qty-num">${i.qty}</span>
+            <button class="qty-btn" onclick="adjustQty(${i.id},1)">+</button>
+          </div></td>
+          <td>${i.cond?`<span class="cond-badge ${cc}">${esc(i.cond)}</span>`:'<span style="color:var(--muted);font-size:12px">—</span>'}</td>
+          <td>${i.location?`<span class="loc-tag">📍 ${esc(i.location)}</span>`:'<span style="color:var(--muted);font-size:12px">—</span>'}</td>
+          <td>${i.serial?`<span class="sku-tag">${esc(i.serial)}</span>`:'<span style="color:var(--muted);font-size:12px">—</span>'}</td>
+          <td><span class="status-badge ${st.cls}"><span class="status-dot"></span>${st.label}</span></td>
+          <td><div class="actions">
+            <button class="btn-sm-edit" onclick="openEdit(${i.id})">Edit</button>
+            <button class="btn-sm-del" onclick="deleteItem(${i.id})">Remove</button>
+          </div></td>
+        </tr>`;
+      }).join('');
+    } else {
+      const grid=document.getElementById('grid-view');
+      if (!filtered.length) { grid.innerHTML='<div class="empty"><div class="empty-icon">📷</div><div class="empty-text">No equipment found</div></div>'; return; }
+      grid.innerHTML = filtered.map(i=>{
+        const st=getStatus(i), cc=condClass(i.cond);
+        return `<div class="grid-card">
+          <div class="gc-header">
+            <span class="status-badge ${st.cls}"><span class="status-dot"></span>${st.label}</span>
+            ${i.cond?`<span class="cond-badge ${cc}">${esc(i.cond)}</span>`:''}
+          </div>
+          <div class="gc-name">${esc(i.name)}</div>
+          <div class="gc-cat">${esc(i.cat||'—')}</div>
+          <div class="gc-mid">
+            <div class="gc-qty-wrap">
+              <button class="qty-btn" onclick="adjustQty(${i.id},-1)">−</button>
+              <div><div class="gc-qty">${i.qty}</div><div class="gc-qty-label">Units</div></div>
+              <button class="qty-btn" onclick="adjustQty(${i.id},1)">+</button>
+            </div>
+            ${i.location?`<span class="loc-tag">📍 ${esc(i.location)}</span>`:''}
+          </div>
+          ${i.serial?`<div class="gc-serial">S/N: ${esc(i.serial)}</div>`:''}
+          ${i.notes?`<div style="font-size:12px;color:var(--muted);margin-top:8px">${esc(i.notes.substring(0,70))}${i.notes.length>70?'…':''}</div>`:''}
+          <div class="gc-foot">
+            <button class="btn-sm-edit" onclick="openEdit(${i.id})">Edit</button>
+            <button class="btn-sm-del" onclick="deleteItem(${i.id})">Remove</button>
+          </div>
+        </div>`;
+      }).join('');
+    }
+  }
+
+  function showToast(msg) {
+    const old=document.querySelector('.toast'); if(old) old.remove();
+    const t=document.createElement('div'); t.className='toast'; t.textContent=msg;
+    document.body.appendChild(t); setTimeout(()=>t.remove(),2200);
+  }
+
+  function exportCSV() {
+    if (!items.length) { showToast('Nothing to export'); return; }
+    const headers=['Name','Category','Quantity','Condition','Serial/Asset','Location','Status','Notes','Date Added'];
+    const rows=items.map(i=>{
+      const st=getStatus(i);
+      return [i.name,i.cat||'',i.qty,i.cond||'',i.serial||'',i.location||'',st.label,i.notes||'',i.date?new Date(i.date).toLocaleDateString():''];
+    });
+    const csv=[headers,...rows].map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+    dl('lenslog_inventory.csv',csv,'text/csv'); showToast('CSV exported!');
+  }
+
+  function exportJSON() {
+    if (!items.length) { showToast('Nothing to export'); return; }
+    dl('lenslog_inventory.json',JSON.stringify(items,null,2),'application/json'); showToast('JSON exported!');
+  }
+
+  function dl(filename,content,type) {
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(new Blob([content],{type}));
+    a.download=filename; a.click();
+  }
+
+  document.getElementById('edit-modal').addEventListener('click',function(e){ if(e.target===this) closeModal(); });
+  document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeModal(); });
+
+  // Seed data
+  if (!items.length) {
+    [
+      {name:'Sony A7 IV',cat:'Cameras',qty:2,cond:'Mint',serial:'SN-SOA7-0042',location:'Camera Shelf A1',notes:'Full frame, 33MP'},
+      {name:'Canon EF 50mm f/1.4',cat:'Lenses',qty:3,cond:'Good',serial:'',location:'Lens Cabinet B2',notes:''},
+      {name:'Sigma 24-70mm f/2.8 Art',cat:'Lenses',qty:1,cond:'Good',serial:'SG-2470-019',location:'Lens Cabinet B3',notes:'Slight dust on rear element'},
+      {name:'Godox SL-60W LED',cat:'Lighting',qty:4,cond:'Good',serial:'',location:'Studio Rack C1',notes:''},
+      {name:'Manfrotto 055XPRO3 Tripod',cat:'Tripods & Support',qty:2,cond:'Fair',serial:'',location:'Gear Closet D1',notes:'One missing rubber foot'},
+      {name:'Rode VideoMicro',cat:'Audio',qty:0,cond:'Good',serial:'RD-VM-007',location:'Audio Box E1',notes:'Sent in for repair'},
+      {name:'SanDisk Extreme 128GB SD',cat:'Storage & Media',qty:8,cond:'Good',serial:'',location:'Card Wallet F1',notes:''},
+      {name:'LP-E6NH Battery',cat:'Batteries & Power',qty:1,cond:'Fair',serial:'',location:'Charging Station G1',notes:'~70% capacity'},
+    ].forEach(s => items.push({id:Date.now()+Math.random(),date:new Date().toISOString(),...s}));
+    save();
+  }
+
+  renderAll();
+</script>
+</body>
+</html>
