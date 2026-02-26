@@ -1,0 +1,1345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#1a1a1a">
+<title>LENS LOG</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* ── TOKENS ── */
+:root {
+  --bg:#f5f2ee; --surface:#fff; --surface2:#f0ece6; --border:#ddd8d0;
+  --accent:#1a1a1a; --accent2:#b85c2a; --text:#1a1a1a; --muted:#888074;
+  --ok:#2a7a4b; --ok-bg:#e8f5ee; --warn:#b85c2a; --warn-bg:#fdf0e8;
+  --out:#8b1a1a; --out-bg:#fde8e8; --tag-bg:#ede9e3;
+  --blue:#1e3a5f; --blue-bg:#e8eef7;
+  --hh:64px;       /* header height desktop */
+  --mhh:56px;      /* header height mobile  */
+  --tab:60px;      /* bottom tab bar height */
+  --safe-b: env(safe-area-inset-bottom, 0px);
+  --safe-l: env(safe-area-inset-left,   0px);
+  --safe-r: env(safe-area-inset-right,  0px);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{background:var(--bg);color:var(--text);font-family:'Syne',sans-serif;min-height:100vh;overflow-x:hidden}
+
+/* ══════════════════════════════════════════════
+   HEADER
+══════════════════════════════════════════════ */
+header{
+  background:var(--accent);color:#fff;
+  padding:0 32px;display:flex;align-items:stretch;
+  height:var(--hh);position:sticky;top:0;z-index:200;
+  padding-left:max(32px,var(--safe-l));
+  padding-right:max(32px,var(--safe-r));
+}
+.logo{display:flex;align-items:center;gap:12px;padding:14px 0;margin-right:28px;flex-shrink:0}
+.logo-ring{width:32px;height:32px;border:2px solid var(--accent2);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px}
+.logo-text{font-size:19px;font-weight:800;letter-spacing:3px;text-transform:uppercase}
+.logo-text span{color:var(--accent2)}
+.hstats{display:flex;flex:1;overflow:hidden}
+.hstat{padding:0 18px;display:flex;flex-direction:column;justify-content:center;border-left:1px solid rgba(255,255,255,.1);text-align:center;flex-shrink:0}
+.hstat-val{font-family:'DM Mono',monospace;font-size:18px;font-weight:500;line-height:1}
+.hstat-lbl{font-size:8px;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.4);margin-top:3px}
+/* sync pill in header */
+.sync-pill{display:flex;align-items:center;gap:6px;padding:0 14px;border-left:1px solid rgba(255,255,255,.1);cursor:pointer;flex-shrink:0;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.5);transition:color .15s}
+.sync-pill:hover{color:#fff}
+.sync-dot{width:7px;height:7px;border-radius:50%;background:var(--muted);flex-shrink:0;transition:background .3s}
+.sync-dot.ok{background:#4ade80}.sync-dot.busy{background:#fbbf24;animation:pulse .8s ease-in-out infinite}
+.sync-dot.err{background:#f87171}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+/* desktop nav */
+.header-nav{display:flex;align-items:stretch;flex-shrink:0}
+.nav-btn{padding:0 20px;background:transparent;border:none;border-bottom:3px solid transparent;color:rgba(255,255,255,.5);font-family:'Syne',sans-serif;font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:6px}
+.nav-btn:hover{color:#fff}.nav-btn.active{color:#fff;border-bottom-color:var(--accent2)}
+/* mobile header tweaks */
+.mob-menu-btn{display:none;background:none;border:none;color:#fff;font-size:22px;padding:0 4px;cursor:pointer;line-height:1;margin-right:8px;flex-shrink:0}
+
+/* ══════════════════════════════════════════════
+   PAGE SWITCHING
+══════════════════════════════════════════════ */
+.page{display:none}
+.page.active{display:flex}
+
+/* ══════════════════════════════════════════════
+   SHARED FORMS
+══════════════════════════════════════════════ */
+.form-row{margin-bottom:12px}
+label{display:block;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:5px}
+input,select,textarea{
+  width:100%;background:var(--surface2);border:1.5px solid var(--border);
+  color:var(--text);padding:10px 12px;font-family:'Syne',sans-serif;
+  font-size:15px;outline:none;border-radius:6px;transition:border-color .15s;
+  -webkit-appearance:none;appearance:none;
+}
+input:focus,select:focus,textarea:focus{border-color:var(--accent)}
+input::placeholder,textarea::placeholder{color:#bbb5ab}
+textarea{resize:vertical;min-height:60px}
+select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23888074' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:34px}
+
+/* buttons */
+.btn{width:100%;padding:13px;font-family:'Syne',sans-serif;font-size:13px;font-weight:700;letter-spacing:2px;text-transform:uppercase;cursor:pointer;border:none;border-radius:6px;transition:all .15s;min-height:48px}
+.btn-primary{background:var(--accent);color:#fff}.btn-primary:active{background:#333}
+.btn-ghost{background:transparent;color:var(--muted);border:1.5px solid var(--border)}.btn-ghost:active{border-color:var(--accent);color:var(--accent)}
+.btn-sm{padding:7px 13px;font-family:'Syne',sans-serif;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;border-radius:4px;cursor:pointer;transition:all .15s;min-height:36px}
+.btn-sm-edit{background:transparent;color:var(--accent2);border:1.5px solid #f5d5c0}.btn-sm-edit:active{background:var(--accent2);color:#fff}
+.btn-sm-del{background:transparent;color:var(--out);border:1.5px solid #f5c5c5}.btn-sm-del:active{background:var(--out);color:#fff;border-color:var(--out)}
+.ibtn{padding:10px 18px;font-family:'Syne',sans-serif;font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;border:none;border-radius:6px;transition:all .15s;white-space:nowrap;min-height:40px}
+.ibtn-primary{background:var(--accent);color:#fff}
+.ibtn-ghost{background:transparent;color:var(--muted);border:1.5px solid var(--border)}
+.ibtn-danger{background:transparent;color:var(--out);border:1.5px solid #f5c5c5}
+.ibtn-success{background:var(--ok);color:#fff}
+.ibtn-orange{background:var(--accent2);color:#fff}
+
+/* ══════════════════════════════════════════════
+   DESKTOP SIDEBAR
+══════════════════════════════════════════════ */
+.sidebar{background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow-y:auto;width:272px;flex-shrink:0}
+.sb-section{padding:20px;border-bottom:1px solid var(--border)}
+.sb-label{font-size:10px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--muted);margin-bottom:12px}
+.cat-item{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600;transition:all .15s;margin-bottom:3px;color:var(--muted)}
+.cat-item:hover,.cat-item:active{background:var(--surface2);color:var(--text)}.cat-item.active{background:var(--accent);color:#fff}
+.cat-count{font-family:'DM Mono',monospace;font-size:11px;padding:1px 7px;border-radius:10px}
+.cat-item.active .cat-count{background:rgba(255,255,255,.2)}.cat-item:not(.active) .cat-count{background:var(--tag-bg);color:var(--muted)}
+
+/* ══════════════════════════════════════════════
+   DRAWER (mobile sidebar overlay)
+══════════════════════════════════════════════ */
+.drawer-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:300;backdrop-filter:blur(2px)}
+.drawer-backdrop.open{display:block}
+.drawer{position:fixed;top:0;left:0;width:min(320px,90vw);height:100%;background:var(--surface);z-index:310;transform:translateX(-100%);transition:transform .28s cubic-bezier(.4,0,.2,1);overflow-y:auto;display:flex;flex-direction:column;box-shadow:4px 0 24px rgba(0,0,0,.18)}
+.drawer.open{transform:translateX(0)}
+.drawer-header{background:var(--accent);color:#fff;padding:16px 20px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;min-height:56px}
+.drawer-title{font-size:13px;font-weight:800;letter-spacing:2px;text-transform:uppercase}
+.drawer-close{background:none;border:none;color:rgba(255,255,255,.7);font-size:20px;cursor:pointer;padding:4px;line-height:1}
+
+/* ══════════════════════════════════════════════
+   INVENTORY PAGE
+══════════════════════════════════════════════ */
+#page-inventory{min-height:calc(100vh - var(--hh));flex-direction:row}
+.inv-layout{display:flex;width:100%;min-height:calc(100vh - var(--hh))}
+.inv-content{flex:1;padding:24px 28px;display:flex;flex-direction:column;gap:16px;overflow-y:auto;min-width:0}
+
+/* toolbar */
+.toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.search-wrap{position:relative;flex:1;min-width:160px}
+.search-wrap input{padding-left:38px}
+.search-ico{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:15px;pointer-events:none}
+.toolbar select{width:auto;flex:0 0 auto}
+.view-toggle{margin-left:auto;display:flex;border:1.5px solid var(--border);border-radius:6px;overflow:hidden;flex-shrink:0}
+.vbtn{padding:8px 14px;background:transparent;border:none;color:var(--muted);cursor:pointer;font-size:15px;transition:all .15s}.vbtn.active{background:var(--accent);color:#fff}
+
+/* table */
+.table-wrap-outer{background:var(--surface);border:1.5px solid var(--border);border-radius:8px;overflow:hidden}
+.table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{width:100%;border-collapse:collapse;font-size:13px}
+thead th{padding:9px 14px;text-align:left;font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--muted);background:var(--surface2);cursor:pointer;white-space:nowrap;user-select:none;border-bottom:2px solid var(--border)}
+thead th:hover{color:var(--accent)}
+tbody tr{border-bottom:1px solid var(--border);transition:background .1s}
+tbody tr:last-child{border-bottom:none}
+td{padding:12px 14px;vertical-align:middle}
+.td-name{font-weight:700;font-size:14px}.td-sub{font-size:11px;color:var(--muted);margin-top:2px}
+.sku-tag{font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);background:var(--tag-bg);padding:2px 7px;border-radius:3px;display:inline-block}
+.loc-tag{font-size:11px;color:var(--muted)}
+.qty-cell{display:flex;align-items:center;gap:6px}
+.qty-num{font-family:'DM Mono',monospace;font-size:18px;font-weight:500;min-width:32px;text-align:center}
+.qty-btn{width:32px;height:32px;background:var(--surface2);border:1.5px solid var(--border);border-radius:4px;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;transition:all .12s;color:var(--text);flex-shrink:0;-webkit-tap-highlight-color:transparent}
+.qty-btn:active{background:var(--accent);border-color:var(--accent);color:#fff}
+.cond-badge{display:inline-block;padding:3px 8px;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;border-radius:3px}
+.cond-mint{background:#e8f5ee;color:var(--ok)}.cond-good{background:#eef5e8;color:#4a7a2a}
+.cond-fair{background:var(--warn-bg);color:var(--warn)}.cond-poor{background:var(--out-bg);color:var(--out)}
+.td-actions{display:flex;gap:5px;align-items:center}
+
+/* grid */
+.grid-view{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px}
+.gc{background:var(--surface);border:1.5px solid var(--border);border-radius:8px;padding:16px;transition:all .2s}
+.gc-top{display:flex;justify-content:flex-end;margin-bottom:8px;min-height:22px}
+.gc-name{font-size:15px;font-weight:700;margin-bottom:2px}.gc-cat{font-size:11px;color:var(--muted);margin-bottom:10px}
+.gc-mid{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-top:1px solid var(--border);border-bottom:1px solid var(--border);margin-bottom:12px}
+.gc-qty-wrap{display:flex;align-items:center;gap:7px}
+.gc-qty{font-family:'DM Mono',monospace;font-size:28px;font-weight:500;line-height:1}
+.gc-qty-lbl{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--muted)}
+.gc-foot{display:flex;gap:5px;margin-top:10px}.gc-foot button{flex:1}
+
+/* mobile card list (replaces table on small screens) */
+.card-list{display:none;flex-direction:column;gap:10px}
+.item-card{background:var(--surface);border:1.5px solid var(--border);border-radius:10px;padding:14px 16px}
+.item-card-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:8px}
+.item-card-name{font-weight:700;font-size:15px;flex:1}
+.item-card-qty{font-family:'DM Mono',monospace;font-size:22px;font-weight:500;color:var(--accent2);flex-shrink:0}
+.item-card-meta{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.item-card-tag{font-size:11px;color:var(--muted);background:var(--tag-bg);padding:2px 8px;border-radius:10px}
+.item-card-actions{display:flex;gap:8px}
+.item-card-actions .btn-sm{flex:1;text-align:center}
+.item-card-qty-row{display:flex;align-items:center;gap:8px;margin-top:8px}
+
+/* empty state */
+.empty-state{text-align:center;padding:56px 20px;color:var(--muted)}
+.empty-ico{font-size:44px;margin-bottom:10px}.empty-txt{font-size:15px;letter-spacing:1px;font-weight:600}
+
+/* FAB — mobile add button */
+.fab{display:none;position:fixed;bottom:calc(var(--tab) + 16px + var(--safe-b));right:20px;width:56px;height:56px;background:var(--accent2);color:#fff;border:none;border-radius:50%;font-size:28px;cursor:pointer;box-shadow:0 4px 20px rgba(0,0,0,.25);z-index:150;align-items:center;justify-content:center;line-height:1;transition:transform .15s;-webkit-tap-highlight-color:transparent}
+.fab:active{transform:scale(.93)}
+
+/* ══════════════════════════════════════════════
+   MODAL
+══════════════════════════════════════════════ */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:400;align-items:center;justify-content:center;backdrop-filter:blur(3px)}
+.modal-overlay.open{display:flex}
+.modal{background:var(--surface);border-radius:12px;padding:24px;width:500px;max-width:calc(100vw - 32px);max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.25);animation:mIn .22s ease}
+.modal-lg{width:660px}
+@keyframes mIn{from{transform:translateY(-16px);opacity:0}to{transform:translateY(0);opacity:1}}
+.modal-hdr{font-size:17px;font-weight:800;letter-spacing:1px;margin-bottom:20px;padding-bottom:12px;border-bottom:2px solid var(--border);display:flex;justify-content:space-between;align-items:center}
+.modal-x{background:none;border:none;font-size:22px;cursor:pointer;color:var(--muted);line-height:1;padding:4px;min-width:36px;min-height:36px;display:flex;align-items:center;justify-content:center}
+.modal-x:hover{color:var(--text)}
+.modal-grid{display:grid;grid-template-columns:1fr 1fr;gap:11px}.modal-full{grid-column:1/-1}
+.modal-actions{display:flex;gap:10px;margin-top:18px}.modal-actions .btn{flex:1}
+/* on mobile — modals slide up from bottom */
+@media(max-width:640px){
+  .modal-overlay{align-items:flex-end}
+  .modal{border-radius:16px 16px 0 0;max-width:100vw;width:100%;max-height:88vh;padding:20px 16px;padding-bottom:calc(20px + var(--safe-b));animation:mUp .25s ease}
+  @keyframes mUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+  .modal-grid{grid-template-columns:1fr}
+  .modal-full{grid-column:1}
+}
+
+/* ══════════════════════════════════════════════
+   TRIPS PAGE
+══════════════════════════════════════════════ */
+#page-trips{min-height:calc(100vh - var(--hh));flex-direction:row}
+.trips-layout{display:flex;width:100%;min-height:calc(100vh - var(--hh))}
+.trips-sidebar{background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow-y:auto;width:300px;flex-shrink:0}
+.trips-list{padding:12px;display:flex;flex-direction:column;gap:7px;flex:1}
+.trip-thumb{border:1.5px solid var(--border);border-radius:8px;padding:12px 14px;cursor:pointer;transition:all .15s;-webkit-tap-highlight-color:transparent}
+.trip-thumb:active{background:var(--surface2)}.trip-thumb.selected{border-color:var(--accent);background:var(--surface2);box-shadow:0 0 0 2px rgba(26,26,26,.08)}
+.trip-thumb-name{font-weight:700;font-size:14px;margin-bottom:4px}
+.trip-thumb-meta{font-size:11px;color:var(--muted);display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+.trip-thumb-foot{display:flex;align-items:center;justify-content:space-between}
+.trip-del-btn{background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px;padding:4px 6px;border-radius:4px;transition:all .12s;line-height:1;min-width:32px;min-height:32px;display:flex;align-items:center;justify-content:center}
+.trip-del-btn:active{background:var(--out-bg);color:var(--out)}
+.trip-status{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase}
+.ts-planned{background:var(--tag-bg);color:var(--muted)}.ts-active{background:var(--blue-bg);color:var(--blue)}.ts-done{background:var(--ok-bg);color:var(--ok)}
+
+.trips-main{flex:1;padding:24px 28px;display:flex;flex-direction:column;gap:18px;overflow-y:auto;min-width:0}
+.trip-detail-hdr{display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px}
+.trip-detail-title{font-size:22px;font-weight:800}
+.trip-detail-meta{font-size:12px;color:var(--muted);margin-top:4px;line-height:1.8}
+.trip-detail-actions{display:flex;gap:7px;flex-wrap:wrap}
+.sum-bar{display:flex;gap:12px;flex-wrap:wrap}
+.sum-card{background:var(--surface);border:1.5px solid var(--border);border-radius:8px;padding:12px 16px;display:flex;flex-direction:column;gap:2px;min-width:100px}
+.sum-val{font-family:'DM Mono',monospace;font-size:22px;font-weight:500}
+.sum-lbl{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--muted)}
+.section-card{background:var(--surface);border:1.5px solid var(--border);border-radius:8px;overflow:hidden}
+.sc-hdr{display:flex;justify-content:space-between;align-items:center;padding:11px 16px;background:var(--surface2);border-bottom:1.5px solid var(--border)}
+.sc-title{font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--muted)}
+.gear-row{display:flex;align-items:center;gap:12px;padding:11px 16px;border-bottom:1px solid var(--border)}
+.gear-row:last-child{border-bottom:none}
+.gear-name{font-weight:600;font-size:14px;flex:1}.gear-cat{font-size:11px;color:var(--muted)}
+.gear-qty{font-family:'DM Mono',monospace;font-size:16px;font-weight:500;color:var(--blue);min-width:60px;text-align:right;padding-right:8px}
+.trip-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;text-align:center;padding:60px 32px;color:var(--muted)}
+.trip-empty-ico{font-size:52px;margin-bottom:14px}
+.trip-empty-title{font-size:18px;font-weight:800;color:var(--text);margin-bottom:8px}
+.trip-empty-sub{font-size:13px;line-height:1.8}
+
+/* picker */
+.picker-list{display:flex;flex-direction:column;gap:6px;max-height:min(320px,50vh);overflow-y:auto;margin-bottom:6px}
+.picker-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1.5px solid var(--border);border-radius:6px;transition:border-color .15s,background .15s}
+.picker-item:active,.picker-item.selected{border-color:var(--accent);background:var(--surface2)}
+.picker-name{font-weight:600;font-size:13px;flex:1}.picker-cat{font-size:10px;color:var(--muted)}
+.picker-avail{font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);white-space:nowrap;flex-shrink:0}
+.picker-qty{width:72px!important;padding:8px!important;font-size:15px!important;font-family:'DM Mono',monospace!important;text-align:center!important;flex-shrink:0;min-height:40px!important}
+.load-summary{font-size:12px;font-weight:600;min-height:18px;padding:6px 0}
+
+/* ══════════════════════════════════════════════
+   BOTTOM TAB BAR (mobile only)
+══════════════════════════════════════════════ */
+.bottom-tabs{
+  display:none;position:fixed;bottom:0;left:0;right:0;
+  height:calc(var(--tab) + var(--safe-b));
+  background:var(--accent);z-index:200;
+  padding-bottom:var(--safe-b);
+  padding-left:var(--safe-l);padding-right:var(--safe-r);
+  border-top:1px solid rgba(255,255,255,.1);
+}
+.bottom-tabs-inner{display:flex;height:var(--tab)}
+.tab-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;background:none;border:none;color:rgba(255,255,255,.5);cursor:pointer;font-family:'Syne',sans-serif;font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;transition:color .15s;-webkit-tap-highlight-color:transparent}
+.tab-btn.active{color:#fff}
+.tab-ico{font-size:20px;line-height:1}
+.tab-btn.active .tab-ico{filter:drop-shadow(0 0 6px rgba(184,92,42,.8))}
+
+/* mobile trips back button */
+.mob-back-btn{display:none;align-items:center;gap:8px;padding:10px 16px;background:var(--surface2);border-bottom:1px solid var(--border);font-size:13px;font-weight:700;color:var(--accent2);cursor:pointer;border:none;width:100%;text-align:left;-webkit-tap-highlight-color:transparent}
+
+/* ══════════════════════════════════════════════
+   TOAST
+══════════════════════════════════════════════ */
+.toast{position:fixed;bottom:calc(var(--tab) + 12px + var(--safe-b));left:50%;transform:translateX(-50%) translateY(0);padding:11px 22px;background:var(--accent);color:#fff;font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;border-radius:24px;z-index:9999;box-shadow:0 8px 24px rgba(0,0,0,.2);animation:tIn .25s ease;pointer-events:none;white-space:nowrap;max-width:calc(100vw - 32px);text-align:center}
+.toast.error{background:var(--out)}
+@keyframes tIn{from{opacity:0;transform:translateX(-50%) translateY(16px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+
+/* sync modal */
+.sync-modal-info{background:var(--surface2);border-radius:8px;padding:14px;margin-bottom:16px;font-size:13px;line-height:1.7;color:var(--muted)}
+.sync-modal-info strong{color:var(--text)}
+.sync-key-display{font-family:'DM Mono',monospace;background:var(--accent);color:#fff;padding:10px 14px;border-radius:6px;font-size:14px;word-break:break-all;margin:10px 0;letter-spacing:1px}
+
+.hidden{display:none!important}
+
+/* ══════════════════════════════════════════════
+   RESPONSIVE BREAKPOINTS
+══════════════════════════════════════════════ */
+@media(max-width:900px){
+  .sidebar,.trips-sidebar{display:none}
+  .mob-menu-btn{display:flex}
+  header{padding:0 16px;height:var(--mhh)}
+  header{padding-left:max(12px,var(--safe-l));padding-right:max(12px,var(--safe-r))}
+  .hstats{display:none}
+  .header-nav{display:none}
+  .bottom-tabs{display:flex;flex-direction:column}
+  .fab{display:flex}
+  #page-inventory{min-height:calc(100vh - var(--mhh) - var(--tab) - var(--safe-b))}
+  #page-trips{min-height:calc(100vh - var(--mhh) - var(--tab) - var(--safe-b))}
+  .inv-layout{flex-direction:column}
+  .trips-layout{flex-direction:column}
+  .inv-content{padding:14px 14px calc(var(--tab) + var(--safe-b) + 80px)}
+  .trips-main{padding:14px 14px calc(var(--tab) + var(--safe-b) + 16px)}
+  /* hide table, show cards on mobile */
+  .table-wrap-outer{display:none}
+  .card-list{display:flex}
+  .view-toggle{display:none}
+  /* toolbar compact */
+  .toolbar select:not(#sort-field){display:none}
+  .search-wrap{max-width:none}
+  /* trips mobile: show list OR detail */
+  .trips-sidebar-mobile{display:flex;flex-direction:column;width:100%}
+  .trips-main-wrap{display:none}
+  .trips-main-wrap.active{display:flex;flex-direction:column;flex:1}
+  .mob-back-btn{display:flex}
+}
+
+@media(min-width:901px){
+  .trips-sidebar-mobile{display:none!important}
+  .trips-main-wrap{display:flex!important;flex-direction:column;flex:1;min-width:0}
+  .mob-back-btn{display:none!important}
+}
+
+/* grid always 2 col on tablet */
+@media(min-width:640px)and(max-width:900px){
+  .grid-view{grid-template-columns:repeat(2,1fr)}
+  .card-list{display:none!important}
+  .table-wrap-outer{display:block!important}
+}
+</style>
+</head>
+<body>
+
+<!-- ══════════ HEADER ══════════ -->
+<header>
+  <button class="mob-menu-btn" onclick="openDrawer()" aria-label="Menu">&#9776;</button>
+  <div class="logo">
+    <div class="logo-ring">&#x1F4F7;</div>
+    <div class="logo-text">LENS<span>LOG</span></div>
+  </div>
+  <div class="hstats">
+    <div class="hstat"><div class="hstat-val" id="stat-items">0</div><div class="hstat-lbl">Items</div></div>
+    <div class="hstat"><div class="hstat-val" id="stat-units">0</div><div class="hstat-lbl">Units</div></div>
+    <div class="hstat"><div class="hstat-val" id="stat-cats">0</div><div class="hstat-lbl">Categories</div></div>
+    <div class="hstat"><div class="hstat-val" id="stat-trips">0</div><div class="hstat-lbl">Active Trips</div></div>
+  </div>
+  <!-- sync status -->
+  <div class="sync-pill" onclick="openSyncModal()" title="Sync settings">
+    <span class="sync-dot" id="sync-dot"></span>
+    <span id="sync-label">Sync</span>
+  </div>
+  <div class="header-nav">
+    <button class="nav-btn active" id="nav-inventory" onclick="showPage('inventory')">&#x1F4E6; Inventory</button>
+    <button class="nav-btn"        id="nav-trips"     onclick="showPage('trips')">&#x2708;&#xFE0F; Trips</button>
+  </div>
+</header>
+
+<!-- ══════════ DRAWER (mobile sidebar) ══════════ -->
+<div class="drawer-backdrop" id="drawer-backdrop" onclick="closeDrawer()"></div>
+<div class="drawer" id="drawer">
+  <div class="drawer-header">
+    <span class="drawer-title">&#x1F4F7; Lens Log</span>
+    <button class="drawer-close" onclick="closeDrawer()">&#x2715;</button>
+  </div>
+  <div class="sb-section">
+    <div class="sb-label">Add Equipment</div>
+    <div class="form-row"><label>Item Name *</label><input type="text" id="d-inp-name" placeholder="e.g. Sony A7 IV"></div>
+    <div class="form-row">
+      <label>Category</label>
+      <select id="d-inp-cat">
+        <option value="">Select category...</option>
+        <option>Cameras</option><option>Lenses</option><option>Lighting</option>
+        <option>Tripods &amp; Support</option><option>Audio</option><option>Storage &amp; Media</option>
+        <option>Batteries &amp; Power</option><option>Bags &amp; Cases</option><option>Filters</option>
+        <option>Accessories</option><option>Studio Props</option><option>Other</option>
+      </select>
+    </div>
+    <div class="form-row"><label>Quantity *</label><input type="number" id="d-inp-qty" placeholder="1" min="0" inputmode="numeric"></div>
+    <div class="form-row">
+      <label>Condition</label>
+      <select id="d-inp-cond">
+        <option value="">Select...</option>
+        <option>Mint</option><option>Good</option><option>Fair</option><option>Poor</option>
+      </select>
+    </div>
+    <div class="form-row"><label>Serial / Asset No.</label><input type="text" id="d-inp-serial" placeholder="SN-..."></div>
+    <div class="form-row"><label>Storage Location</label><input type="text" id="d-inp-location" placeholder="e.g. Shelf A2"></div>
+    <div class="form-row"><label>Notes</label><textarea id="d-inp-notes" placeholder="Accessories, known issues..."></textarea></div>
+    <button class="btn btn-primary" onclick="addItemFromDrawer()">+ Add Equipment</button>
+  </div>
+  <div class="sb-section">
+    <div class="sb-label">Filter by Category</div>
+    <div id="drawer-cat-list"></div>
+  </div>
+  <div class="sb-section">
+    <div class="sb-label">Export</div>
+    <button class="btn btn-primary" onclick="exportCSV();closeDrawer()" style="margin-bottom:8px">Export CSV</button>
+    <button class="btn btn-ghost"   onclick="exportJSON();closeDrawer()">Export JSON</button>
+  </div>
+</div>
+
+<!-- ══════════ INVENTORY PAGE ══════════ -->
+<div class="page active" id="page-inventory">
+  <div class="inv-layout">
+    <!-- Desktop sidebar -->
+    <aside class="sidebar">
+      <div class="sb-section">
+        <div class="sb-label">Add Equipment</div>
+        <div class="form-row"><label>Item Name *</label><input type="text" id="inp-name" placeholder="e.g. Sony A7 IV"></div>
+        <div class="form-row">
+          <label>Category</label>
+          <select id="inp-cat">
+            <option value="">Select category...</option>
+            <option>Cameras</option><option>Lenses</option><option>Lighting</option>
+            <option>Tripods &amp; Support</option><option>Audio</option><option>Storage &amp; Media</option>
+            <option>Batteries &amp; Power</option><option>Bags &amp; Cases</option><option>Filters</option>
+            <option>Accessories</option><option>Studio Props</option><option>Other</option>
+          </select>
+        </div>
+        <div class="form-row"><label>Quantity *</label><input type="number" id="inp-qty" placeholder="1" min="0"></div>
+        <div class="form-row">
+          <label>Condition</label>
+          <select id="inp-cond">
+            <option value="">Select...</option>
+            <option>Mint</option><option>Good</option><option>Fair</option><option>Poor</option>
+          </select>
+        </div>
+        <div class="form-row"><label>Serial / Asset No.</label><input type="text" id="inp-serial" placeholder="SN-..."></div>
+        <div class="form-row"><label>Storage Location</label><input type="text" id="inp-location" placeholder="e.g. Shelf A2"></div>
+        <div class="form-row"><label>Notes</label><textarea id="inp-notes" placeholder="Accessories, known issues..."></textarea></div>
+        <button class="btn btn-primary" onclick="addItem()">+ Add Equipment</button>
+      </div>
+      <div class="sb-section">
+        <div class="sb-label">Filter by Category</div>
+        <div id="cat-list"></div>
+      </div>
+      <div class="sb-section">
+        <div class="sb-label">Export</div>
+        <button class="btn btn-primary" onclick="exportCSV()" style="margin-bottom:8px">Export CSV</button>
+        <button class="btn btn-ghost"   onclick="exportJSON()">Export JSON</button>
+      </div>
+    </aside>
+
+    <div class="inv-content">
+      <div class="toolbar">
+        <div class="search-wrap">
+          <span class="search-ico">&#x1F50D;</span>
+          <input type="text" id="search-input" placeholder="Search equipment..." oninput="renderInventory()">
+        </div>
+        <select id="sort-field" onchange="renderInventory()">
+          <option value="name">Name</option>
+          <option value="qty">Qty</option>
+          <option value="cat">Category</option>
+          <option value="cond">Condition</option>
+        </select>
+        <select id="sort-dir" onchange="renderInventory()">
+          <option value="asc">&#x2191; Asc</option>
+          <option value="desc">&#x2193; Desc</option>
+        </select>
+        <div class="view-toggle">
+          <button class="vbtn active" id="vbtn-table" onclick="switchView('table')" title="Table">&#x2630;</button>
+          <button class="vbtn"        id="vbtn-grid"  onclick="switchView('grid')"  title="Grid">&#x229E;</button>
+        </div>
+      </div>
+
+      <!-- Table view (desktop) -->
+      <div id="view-table" class="table-wrap-outer">
+        <div class="table-wrap">
+          <table>
+            <thead><tr>
+              <th onclick="sortBy('name')">Item</th>
+              <th onclick="sortBy('cat')">Category</th>
+              <th onclick="sortBy('qty')">Quantity</th>
+              <th onclick="sortBy('cond')">Condition</th>
+              <th>Location</th><th>Serial</th><th>Actions</th>
+            </tr></thead>
+            <tbody id="table-body"></tbody>
+          </table>
+        </div>
+        <div id="table-empty" class="empty-state hidden">
+          <div class="empty-ico">&#x1F4F7;</div><div class="empty-txt">No equipment found</div>
+        </div>
+      </div>
+
+      <!-- Grid view -->
+      <div id="view-grid" class="grid-view hidden"></div>
+
+      <!-- Mobile card list -->
+      <div id="card-list" class="card-list"></div>
+    </div>
+  </div>
+</div>
+
+<!-- FAB -->
+<button class="fab" onclick="openDrawer()" aria-label="Add equipment">+</button>
+
+<!-- ══════════ TRIPS PAGE ══════════ -->
+<div class="page" id="page-trips">
+  <div class="trips-layout">
+    <!-- Desktop trips sidebar -->
+    <div class="trips-sidebar">
+      <div class="sb-section">
+        <div class="sb-label">New Trip</div>
+        <div class="form-row"><label>Trip Name *</label><input type="text" id="trip-name" placeholder="NYC Fashion Shoot"></div>
+        <div class="form-row"><label>Location</label><input type="text" id="trip-loc" placeholder="Brooklyn, NY"></div>
+        <div class="form-row"><label>Date</label><input type="date" id="trip-date"></div>
+        <div class="form-row"><label>Notes</label><textarea id="trip-notes" placeholder="Client, brief..." style="min-height:46px"></textarea></div>
+        <button class="btn btn-primary" onclick="createTrip()">+ Create Trip</button>
+      </div>
+      <div class="trips-list" id="trips-list">
+        <div style="text-align:center;padding:18px;color:var(--muted);font-size:12px">No trips yet</div>
+      </div>
+    </div>
+
+    <!-- Mobile: Trip list panel -->
+    <div class="trips-sidebar-mobile" id="mob-trips-panel">
+      <div class="sb-section">
+        <div class="sb-label">New Trip</div>
+        <div class="form-row"><label>Trip Name *</label><input type="text" id="m-trip-name" placeholder="NYC Fashion Shoot"></div>
+        <div class="form-row"><label>Location</label><input type="text" id="m-trip-loc" placeholder="Brooklyn, NY"></div>
+        <div class="form-row"><label>Date</label><input type="date" id="m-trip-date"></div>
+        <div class="form-row"><label>Notes</label><textarea id="m-trip-notes" placeholder="Client, brief..." style="min-height:46px"></textarea></div>
+        <button class="btn btn-primary" onclick="createTripMobile()">+ Create Trip</button>
+      </div>
+      <div class="trips-list" id="m-trips-list">
+        <div style="text-align:center;padding:18px;color:var(--muted);font-size:12px">No trips yet</div>
+      </div>
+    </div>
+
+    <!-- Trip detail panel (desktop always visible, mobile shown when trip selected) -->
+    <div class="trips-main-wrap" id="trips-main-wrap">
+      <button class="mob-back-btn" onclick="mobBackToTrips()">&#x2190; All Trips</button>
+      <div class="trips-main" id="trips-main">
+        <div class="trip-empty">
+          <div class="trip-empty-ico">&#x2708;&#xFE0F;</div>
+          <div class="trip-empty-title">Select or Create a Trip</div>
+          <div class="trip-empty-sub">Create a trip on the left, load your equipment,<br>and unload everything when you return.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ EDIT ITEM MODAL ══════════ -->
+<div class="modal-overlay" id="edit-modal">
+  <div class="modal">
+    <div class="modal-hdr">Edit Equipment <button class="modal-x" onclick="closeModal('edit-modal')">&#x2715;</button></div>
+    <input type="hidden" id="edit-id">
+    <div class="modal-grid">
+      <div class="modal-full form-row"><label>Item Name *</label><input type="text" id="edit-name"></div>
+      <div class="form-row">
+        <label>Category</label>
+        <select id="edit-cat">
+          <option value="">Select...</option>
+          <option>Cameras</option><option>Lenses</option><option>Lighting</option>
+          <option>Tripods &amp; Support</option><option>Audio</option><option>Storage &amp; Media</option>
+          <option>Batteries &amp; Power</option><option>Bags &amp; Cases</option><option>Filters</option>
+          <option>Accessories</option><option>Studio Props</option><option>Other</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <label>Condition</label>
+        <select id="edit-cond">
+          <option value="">Select...</option>
+          <option>Mint</option><option>Good</option><option>Fair</option><option>Poor</option>
+        </select>
+      </div>
+      <div class="form-row"><label>Quantity</label><input type="number" id="edit-qty" min="0" inputmode="numeric"></div>
+      <div class="form-row"><label>Serial / Asset</label><input type="text" id="edit-serial"></div>
+      <div class="modal-full form-row"><label>Storage Location</label><input type="text" id="edit-location"></div>
+      <div class="modal-full form-row"><label>Notes</label><textarea id="edit-notes"></textarea></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost"   onclick="closeModal('edit-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveEdit()">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ LOAD GEAR MODAL ══════════ -->
+<div class="modal-overlay" id="load-modal">
+  <div class="modal modal-lg">
+    <div class="modal-hdr">Load Equipment <button class="modal-x" onclick="closeModal('load-modal')">&#x2715;</button></div>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:12px">Type a quantity next to each item. Units will be deducted from inventory.</p>
+    <div class="form-row" style="margin-bottom:10px">
+      <input type="text" id="load-search" placeholder="Filter equipment..." oninput="renderPicker()">
+    </div>
+    <div class="picker-list" id="picker-list"></div>
+    <div class="load-summary" id="load-summary" style="color:var(--muted)">Enter quantities above to select items.</div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost"   onclick="closeModal('load-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="confirmLoad()">Load Equipment</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ SYNC MODAL ══════════ -->
+<div class="modal-overlay" id="sync-modal">
+  <div class="modal">
+    <div class="modal-hdr">&#x1F4F1; Multi-Device Sync <button class="modal-x" onclick="closeModal('sync-modal')">&#x2715;</button></div>
+    <div class="sync-modal-info">
+      LensLog uses a <strong>shared sync key</strong> to keep data in sync across all your devices.<br><br>
+      Your current sync key:<br>
+      <div class="sync-key-display" id="sync-key-display">loading...</div>
+      Share this key on another device to see the same data.
+    </div>
+    <div class="form-row">
+      <label>Enter a sync key to join another device</label>
+      <input type="text" id="sync-key-input" placeholder="e.g. ll-abc123" style="font-family:'DM Mono',monospace;letter-spacing:1px">
+    </div>
+    <div id="sync-join-status" style="font-size:12px;color:var(--muted);margin-bottom:8px;min-height:18px"></div>
+    <div class="modal-actions" style="flex-wrap:wrap;gap:8px">
+      <button class="btn btn-ghost"    onclick="closeModal('sync-modal')" style="flex:1 1 120px">Close</button>
+      <button class="btn btn-ghost"    onclick="genNewKey()"             style="flex:1 1 120px">New Key</button>
+      <button class="btn btn-primary"  onclick="joinKey()"               style="flex:1 1 120px">Join Key</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ BOTTOM TABS ══════════ -->
+<div class="bottom-tabs">
+  <div class="bottom-tabs-inner">
+    <button class="tab-btn active" id="tab-inventory" onclick="showPage('inventory')">
+      <span class="tab-ico">&#x1F4E6;</span>Inventory
+    </button>
+    <button class="tab-btn" id="tab-trips" onclick="showPage('trips')">
+      <span class="tab-ico">&#x2708;&#xFE0F;</span>Trips
+    </button>
+    <button class="tab-btn" onclick="openSyncModal()">
+      <span class="tab-ico">&#x1F4F2;</span>Sync
+    </button>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+/* ══════════════════════════════════════
+   SYNC / STORAGE LAYER
+   Uses window.storage (shared) so all
+   devices with the same key see the
+   same data. Falls back to localStorage.
+══════════════════════════════════════ */
+var SYNC_KEY_LS = 'll_synckey';
+var syncKey = localStorage.getItem(SYNC_KEY_LS) || genSyncKey();
+var syncStatus = 'idle'; // idle | busy | ok | err
+var syncTimer = null;
+
+function genSyncKey() {
+  var key = 'll-' + Math.random().toString(36).slice(2,9);
+  localStorage.setItem(SYNC_KEY_LS, key);
+  syncKey = key;
+  return key;
+}
+
+function dataKey()  { return syncKey + ':data'; }
+
+function setSyncStatus(s) {
+  syncStatus = s;
+  var dot   = document.getElementById('sync-dot');
+  var label = document.getElementById('sync-label');
+  if (!dot) return;
+  dot.className = 'sync-dot ' + s;
+  label.textContent = s === 'ok' ? 'Synced' : s === 'busy' ? 'Syncing' : s === 'err' ? 'Offline' : 'Sync';
+}
+
+/* Save to shared storage */
+async function cloudSave() {
+  setSyncStatus('busy');
+  try {
+    var payload = JSON.stringify({ items: items, trips: trips, nid: _nid, ts: Date.now() });
+    if (window.storage) {
+      await window.storage.set(dataKey(), payload, true);
+    }
+    localStorage.setItem('ll_local_' + syncKey, payload); // local backup
+    setSyncStatus('ok');
+  } catch(e) {
+    setSyncStatus('err');
+    // still save locally
+    localStorage.setItem('ll_local_' + syncKey, JSON.stringify({ items:items, trips:trips, nid:_nid, ts:Date.now() }));
+  }
+}
+
+/* Load from shared storage */
+async function cloudLoad() {
+  setSyncStatus('busy');
+  try {
+    var payload = null;
+    if (window.storage) {
+      var res = await window.storage.get(dataKey(), true);
+      if (res && res.value) payload = res.value;
+    }
+    if (!payload) {
+      // try local backup
+      payload = localStorage.getItem('ll_local_' + syncKey);
+    }
+    if (payload) {
+      var d = JSON.parse(payload);
+      // only update if remote is newer or local is empty
+      if (!items.length || (d.ts && d.ts > (localTs || 0))) {
+        items = d.items || [];
+        trips = d.trips || [];
+        _nid  = d.nid  || _nid;
+        items.forEach(function(i){i.id=Number(i.id);});
+        trips.forEach(function(t){t.id=Number(t.id);if(!Array.isArray(t.gear))t.gear=[];t.gear.forEach(function(g){g.itemId=Number(g.itemId);});});
+        localTs = d.ts;
+        renderAll();
+        if (document.getElementById('page-trips').classList.contains('active')) renderTripsPage();
+      }
+    }
+    setSyncStatus('ok');
+  } catch(e) {
+    setSyncStatus('err');
+  }
+}
+
+/* persist = save locally + push to cloud */
+var localTs = Date.now();
+function persist() {
+  localTs = Date.now();
+  localStorage.setItem('ll_local_' + syncKey, JSON.stringify({ items:items, trips:trips, nid:_nid, ts:localTs }));
+  cloudSave();
+}
+
+/* Poll for remote changes every 30s */
+function startSyncPoll() {
+  clearInterval(syncTimer);
+  syncTimer = setInterval(function() { cloudLoad(); }, 30000);
+}
+
+/* ══════════════════════════════════════
+   ID GENERATOR
+══════════════════════════════════════ */
+var _nid = parseInt(localStorage.getItem('ll_nid_' + syncKey) || '1', 10);
+function nextId() {
+  var id = _nid++;
+  localStorage.setItem('ll_nid_' + syncKey, String(_nid));
+  return id;
+}
+
+/* ══════════════════════════════════════
+   STATE
+══════════════════════════════════════ */
+var items = [];
+var trips = [];
+var currentCat     = 'all';
+var currentView    = 'table';
+var sortField      = 'name';
+var sortDir        = 'asc';
+var selectedTripId = null;
+var pickerSels     = {};
+var mobTripsView   = 'list'; // 'list' | 'detail'
+
+/* ══════════════════════════════════════
+   BOOT
+══════════════════════════════════════ */
+async function boot() {
+  // Load local backup first (instant)
+  var local = localStorage.getItem('ll_local_' + syncKey);
+  if (local) {
+    try {
+      var d = JSON.parse(local);
+      items = d.items || [];
+      trips = d.trips || [];
+      _nid  = d.nid  || 1;
+      localTs = d.ts || 0;
+      items.forEach(function(i){i.id=Number(i.id);});
+      trips.forEach(function(t){t.id=Number(t.id);if(!Array.isArray(t.gear))t.gear=[];t.gear.forEach(function(g){g.itemId=Number(g.itemId);});});
+    } catch(e) { items=[]; trips=[]; }
+  }
+  if (!items.length) seedData();
+  renderAll();
+  // Then pull from cloud
+  await cloudLoad();
+  startSyncPoll();
+}
+
+function seedData() {
+  var seeds = [
+    {name:'Sony A7 IV',              cat:'Cameras',           qty:2,cond:'Mint',serial:'SN-SOA7-0042',location:'Camera Shelf A1',    notes:'Full frame, 33MP'},
+    {name:'Canon EF 50mm f/1.4',     cat:'Lenses',            qty:3,cond:'Good',serial:'',             location:'Lens Cabinet B2',    notes:''},
+    {name:'Sigma 24-70mm f/2.8 Art', cat:'Lenses',            qty:1,cond:'Good',serial:'SG-2470-019',  location:'Lens Cabinet B3',    notes:'Slight dust on rear element'},
+    {name:'Godox SL-60W LED',        cat:'Lighting',          qty:4,cond:'Good',serial:'',             location:'Studio Rack C1',     notes:''},
+    {name:'Manfrotto 055XPRO3',      cat:'Tripods & Support', qty:2,cond:'Fair',serial:'',             location:'Gear Closet D1',     notes:'One missing rubber foot'},
+    {name:'Rode VideoMicro',         cat:'Audio',             qty:2,cond:'Good',serial:'RD-VM-007',    location:'Audio Box E1',       notes:''},
+    {name:'SanDisk Extreme 128GB',   cat:'Storage & Media',   qty:8,cond:'Good',serial:'',             location:'Card Wallet F1',     notes:''},
+    {name:'LP-E6NH Battery',         cat:'Batteries & Power', qty:4,cond:'Fair',serial:'',             location:'Charging Station G1',notes:'~70% capacity'},
+  ];
+  seeds.forEach(function(s){items.push(Object.assign({id:nextId(),createdAt:new Date().toISOString()},s));});
+  persist();
+}
+
+/* ══════════════════════════════════════
+   UTILS
+══════════════════════════════════════ */
+function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function condClass(c){return{Mint:'cond-mint',Good:'cond-good',Fair:'cond-fair',Poor:'cond-poor'}[c]||'';}
+function tsCls(s){return{planned:'ts-planned',active:'ts-active',done:'ts-done'}[s]||'ts-planned';}
+function tsLbl(s){return{planned:'Planned',active:'Active',done:'Done'}[s]||s;}
+function itemById(id){return items.find(function(i){return i.id===id;})||null;}
+function tripById(id){return trips.find(function(t){return t.id===id;})||null;}
+
+/* ══════════════════════════════════════
+   DRAWER
+══════════════════════════════════════ */
+function openDrawer(){
+  document.getElementById('drawer').classList.add('open');
+  document.getElementById('drawer-backdrop').classList.add('open');
+  document.body.style.overflow='hidden';
+}
+function closeDrawer(){
+  document.getElementById('drawer').classList.remove('open');
+  document.getElementById('drawer-backdrop').classList.remove('open');
+  document.body.style.overflow='';
+}
+
+/* ══════════════════════════════════════
+   PAGE NAV
+══════════════════════════════════════ */
+function showPage(name){
+  document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active');});
+  document.querySelectorAll('.nav-btn').forEach(function(b){b.classList.remove('active');});
+  document.querySelectorAll('.tab-btn').forEach(function(b){b.classList.remove('active');});
+  document.getElementById('page-'+name).classList.add('active');
+  var nb=document.getElementById('nav-'+name);if(nb)nb.classList.add('active');
+  var tb=document.getElementById('tab-'+name);if(tb)tb.classList.add('active');
+  if(name==='trips'){
+    mobTripsView='list';
+    updateMobTripsView();
+    renderTripsPage();
+  }
+}
+
+/* ══════════════════════════════════════
+   STATS
+══════════════════════════════════════ */
+function renderStats(){
+  document.getElementById('stat-items').textContent=items.length;
+  document.getElementById('stat-units').textContent=items.reduce(function(s,i){return s+(i.qty||0);},0);
+  document.getElementById('stat-cats').textContent=new Set(items.map(function(i){return i.cat;})).size;
+  document.getElementById('stat-trips').textContent=trips.filter(function(t){return t.status==='active';}).length;
+}
+
+/* ══════════════════════════════════════
+   INVENTORY
+══════════════════════════════════════ */
+function getFiltered(){
+  var q=document.getElementById('search-input').value.toLowerCase();
+  var sf=document.getElementById('sort-field').value;
+  var sd=document.getElementById('sort-dir').value;
+  return items.filter(function(i){
+    var mc=currentCat==='all'||i.cat===currentCat;
+    var mq=!q||[i.name,i.cat,i.serial,i.location,i.notes].some(function(v){return(v||'').toLowerCase().includes(q);});
+    return mc&&mq;
+  }).sort(function(a,b){
+    var va,vb;
+    if(sf==='qty'){va=a.qty||0;vb=b.qty||0;}
+    else if(sf==='cat'){va=a.cat||'';vb=b.cat||'';}
+    else if(sf==='cond'){va=a.cond||'';vb=b.cond||'';}
+    else{va=a.name||'';vb=b.name||'';}
+    if(typeof va==='number')return sd==='asc'?va-vb:vb-va;
+    return sd==='asc'?va.localeCompare(vb):vb.localeCompare(va);
+  });
+}
+
+function renderCats(){
+  var cats=Array.from(new Set(items.map(function(i){return i.cat;}))).sort();
+  function buildHTML(elId){
+    var html='<div class="cat-item '+(currentCat==='all'?'active':'')+'" onclick="filterCat(\'all\')">All Equipment <span class="cat-count">'+items.length+'</span></div>'
+      +cats.map(function(c){var n=items.filter(function(i){return i.cat===c;}).length;return'<div class="cat-item '+(currentCat===c?'active':'')+'" onclick="filterCat('+JSON.stringify(c)+')">'+esc(c)+' <span class="cat-count">'+n+'</span></div>';}).join('');
+    var el=document.getElementById(elId);if(el)el.innerHTML=html;
+  }
+  buildHTML('cat-list');
+  buildHTML('drawer-cat-list');
+}
+
+function renderInventory(){
+  var filtered=getFiltered();
+  if(currentView==='table')renderTable(filtered);
+  else renderGrid(filtered);
+  renderCards(filtered);
+}
+
+function renderTable(filtered){
+  var tbody=document.getElementById('table-body');
+  var empty=document.getElementById('table-empty');
+  if(!filtered.length){tbody.innerHTML='';empty.classList.remove('hidden');return;}
+  empty.classList.add('hidden');
+  tbody.innerHTML=filtered.map(function(i){
+    var cc=condClass(i.cond);
+    return'<tr>'
+      +'<td><div class="td-name">'+esc(i.name)+'</div>'+(i.notes?'<div class="td-sub">'+esc(i.notes.slice(0,55))+(i.notes.length>55?'...':'')+'</div>':'')+'</td>'
+      +'<td><span style="font-size:12px;font-weight:600">'+esc(i.cat||'--')+'</span></td>'
+      +'<td><div class="qty-cell"><button class="qty-btn" onclick="adjustQty('+i.id+',-1)">&#x2212;</button><span class="qty-num">'+i.qty+'</span><button class="qty-btn" onclick="adjustQty('+i.id+',1)">+</button></div></td>'
+      +'<td>'+(i.cond?'<span class="cond-badge '+cc+'">'+esc(i.cond)+'</span>':'<span style="color:var(--muted)">--</span>')+'</td>'
+      +'<td>'+(i.location?'<span class="loc-tag">&#x1F4CD; '+esc(i.location)+'</span>':'<span style="color:var(--muted)">--</span>')+'</td>'
+      +'<td>'+(i.serial?'<span class="sku-tag">'+esc(i.serial)+'</span>':'<span style="color:var(--muted)">--</span>')+'</td>'
+      +'<td><div class="td-actions"><button class="btn-sm btn-sm-edit" onclick="openEditModal('+i.id+')">Edit</button><button class="btn-sm btn-sm-del" onclick="deleteItem('+i.id+')">Del</button></div></td>'
+      +'</tr>';
+  }).join('');
+}
+
+function renderGrid(filtered){
+  var el=document.getElementById('view-grid');
+  if(!filtered.length){el.innerHTML='<div class="empty-state"><div class="empty-ico">&#x1F4F7;</div><div class="empty-txt">No equipment found</div></div>';return;}
+  el.innerHTML=filtered.map(function(i){
+    var cc=condClass(i.cond);
+    return'<div class="gc">'
+      +'<div class="gc-top">'+(i.cond?'<span class="cond-badge '+cc+'">'+esc(i.cond)+'</span>':'')+'</div>'
+      +'<div class="gc-name">'+esc(i.name)+'</div><div class="gc-cat">'+esc(i.cat||'--')+'</div>'
+      +'<div class="gc-mid"><div class="gc-qty-wrap"><button class="qty-btn" onclick="adjustQty('+i.id+',-1)">&#x2212;</button><div><div class="gc-qty">'+i.qty+'</div><div class="gc-qty-lbl">Units</div></div><button class="qty-btn" onclick="adjustQty('+i.id+',1)">+</button></div>'+(i.location?'<span style="font-size:11px;color:var(--muted)">&#x1F4CD; '+esc(i.location)+'</span>':'')+'</div>'
+      +(i.serial?'<div style="font-family:\'DM Mono\',monospace;font-size:10px;color:var(--muted)">S/N: '+esc(i.serial)+'</div>':'')
+      +(i.notes?'<div style="font-size:11px;color:var(--muted);margin-top:6px">'+esc(i.notes.slice(0,70))+(i.notes.length>70?'...':'')+'</div>':'')
+      +'<div class="gc-foot"><button class="btn-sm btn-sm-edit" onclick="openEditModal('+i.id+')">Edit</button><button class="btn-sm btn-sm-del" onclick="deleteItem('+i.id+')">Remove</button></div>'
+      +'</div>';
+  }).join('');
+}
+
+/* Mobile card list */
+function renderCards(filtered){
+  var el=document.getElementById('card-list');if(!el)return;
+  if(!filtered.length){el.innerHTML='<div class="empty-state"><div class="empty-ico">&#x1F4F7;</div><div class="empty-txt">No equipment found</div></div>';return;}
+  el.innerHTML=filtered.map(function(i){
+    var cc=condClass(i.cond);
+    var tags='';
+    if(i.cat)tags+='<span class="item-card-tag">'+esc(i.cat)+'</span>';
+    if(i.cond)tags+='<span class="item-card-tag cond-badge '+cc+'" style="border-radius:10px">'+esc(i.cond)+'</span>';
+    if(i.location)tags+='<span class="item-card-tag">&#x1F4CD; '+esc(i.location)+'</span>';
+    if(i.serial)tags+='<span class="item-card-tag">'+esc(i.serial)+'</span>';
+    return'<div class="item-card">'
+      +'<div class="item-card-top"><div class="item-card-name">'+esc(i.name)+'</div><div class="item-card-qty">'+i.qty+'</div></div>'
+      +(tags?'<div class="item-card-meta">'+tags+'</div>':'')
+      +(i.notes?'<div style="font-size:12px;color:var(--muted);margin-bottom:10px">'+esc(i.notes.slice(0,80))+(i.notes.length>80?'...':'')+'</div>':'')
+      +'<div class="item-card-qty-row"><button class="qty-btn" onclick="adjustQty('+i.id+',-1)" style="width:40px;height:40px;font-size:20px">&#x2212;</button><span style="font-family:\'DM Mono\',monospace;font-size:20px;min-width:40px;text-align:center">'+i.qty+'</span><button class="qty-btn" onclick="adjustQty('+i.id+',1)" style="width:40px;height:40px;font-size:20px">+</button><div style="flex:1"></div><div class="item-card-actions"><button class="btn-sm btn-sm-edit" onclick="openEditModal('+i.id+')">Edit</button><button class="btn-sm btn-sm-del" onclick="deleteItem('+i.id+')">Remove</button></div></div>'
+      +'</div>';
+  }).join('');
+}
+
+function filterCat(cat){currentCat=cat;renderAll();closeDrawer();}
+function switchView(v){
+  currentView=v;
+  document.getElementById('view-table').classList.toggle('hidden',v!=='table');
+  document.getElementById('view-grid').classList.toggle('hidden',v!=='grid');
+  document.getElementById('vbtn-table').classList.toggle('active',v==='table');
+  document.getElementById('vbtn-grid').classList.toggle('active',v==='grid');
+  renderInventory();
+}
+function sortBy(field){
+  if(sortField===field)sortDir=sortDir==='asc'?'desc':'asc';else{sortField=field;sortDir='asc';}
+  document.getElementById('sort-field').value=field;
+  document.getElementById('sort-dir').value=sortDir;
+  renderInventory();
+}
+function renderAll(){renderStats();renderCats();renderInventory();}
+
+/* ══════════════════════════════════════
+   ITEM CRUD
+══════════════════════════════════════ */
+function collectItemForm(prefix){
+  prefix=prefix||'';
+  return{
+    name:(document.getElementById(prefix+'inp-name')||{}).value||'',
+    cat:(document.getElementById(prefix+'inp-cat')||{}).value||'Other',
+    qty:parseInt((document.getElementById(prefix+'inp-qty')||{}).value||'0',10),
+    cond:(document.getElementById(prefix+'inp-cond')||{}).value||'',
+    serial:((document.getElementById(prefix+'inp-serial')||{}).value||'').trim(),
+    location:((document.getElementById(prefix+'inp-location')||{}).value||'').trim(),
+    notes:((document.getElementById(prefix+'inp-notes')||{}).value||'').trim(),
+  };
+}
+function clearItemForm(prefix){
+  prefix=prefix||'';
+  ['inp-name','inp-qty','inp-serial','inp-location','inp-notes'].forEach(function(id){var el=document.getElementById(prefix+id);if(el)el.value='';});
+  ['inp-cat','inp-cond'].forEach(function(id){var el=document.getElementById(prefix+id);if(el)el.value='';});
+}
+
+function doAddItem(d){
+  if(!d.name){showToast('Item name is required!',true);return false;}
+  if(isNaN(d.qty)||d.qty<0){showToast('Enter a valid quantity',true);return false;}
+  items.push(Object.assign({id:nextId(),createdAt:new Date().toISOString()},d));
+  persist();renderAll();showToast('Equipment added!');return true;
+}
+
+function addItem(){if(doAddItem(collectItemForm('')))clearItemForm('');}
+function addItemFromDrawer(){if(doAddItem(collectItemForm('d-'))){clearItemForm('d-');closeDrawer();}}
+
+function adjustQty(id,delta){
+  var item=itemById(id);if(!item)return;
+  item.qty=Math.max(0,(item.qty||0)+delta);
+  persist();renderAll();
+}
+
+function deleteItem(id){
+  if(!confirm('Remove this item from inventory?'))return;
+  items=items.filter(function(i){return i.id!==id;});
+  persist();renderAll();showToast('Item removed');
+}
+
+function openEditModal(id){
+  var i=itemById(id);if(!i)return;
+  document.getElementById('edit-id').value=id;
+  document.getElementById('edit-name').value=i.name;
+  document.getElementById('edit-cat').value=i.cat||'';
+  document.getElementById('edit-qty').value=i.qty;
+  document.getElementById('edit-cond').value=i.cond||'';
+  document.getElementById('edit-serial').value=i.serial||'';
+  document.getElementById('edit-location').value=i.location||'';
+  document.getElementById('edit-notes').value=i.notes||'';
+  openModal('edit-modal');
+}
+
+function saveEdit(){
+  var id=parseInt(document.getElementById('edit-id').value,10);
+  var item=itemById(id);if(!item)return;
+  var name=document.getElementById('edit-name').value.trim();
+  if(!name){showToast('Name is required',true);return;}
+  item.name=name;item.cat=document.getElementById('edit-cat').value||item.cat;
+  item.qty=Math.max(0,parseInt(document.getElementById('edit-qty').value,10)||0);
+  item.cond=document.getElementById('edit-cond').value;
+  item.serial=document.getElementById('edit-serial').value.trim();
+  item.location=document.getElementById('edit-location').value.trim();
+  item.notes=document.getElementById('edit-notes').value.trim();
+  persist();closeModal('edit-modal');renderAll();showToast('Saved!');
+}
+
+/* ══════════════════════════════════════
+   EXPORT
+══════════════════════════════════════ */
+function exportCSV(){
+  if(!items.length){showToast('Nothing to export',true);return;}
+  var h=['Name','Category','Qty','Condition','Serial','Location','Notes'];
+  var rows=items.map(function(i){return[i.name,i.cat||'',i.qty,i.cond||'',i.serial||'',i.location||'',i.notes||''];});
+  var csv=[h].concat(rows).map(function(r){return r.map(function(v){return'"'+String(v).replace(/"/g,'""')+'"';}).join(',');}).join('\n');
+  dlFile('lenslog.csv',csv,'text/csv');showToast('CSV exported!');
+}
+function exportJSON(){
+  if(!items.length){showToast('Nothing to export',true);return;}
+  dlFile('lenslog.json',JSON.stringify({items:items,trips:trips},null,2),'application/json');showToast('JSON exported!');
+}
+function dlFile(name,content,type){
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([content],{type:type}));
+  a.download=name;a.click();
+}
+
+/* ══════════════════════════════════════
+   TRIPS — mobile view management
+══════════════════════════════════════ */
+function updateMobTripsView(){
+  var panel=document.getElementById('mob-trips-panel');
+  var wrap=document.getElementById('trips-main-wrap');
+  if(window.innerWidth>900)return; // desktop: both visible
+  if(mobTripsView==='detail'&&selectedTripId){
+    if(panel)panel.style.display='none';
+    if(wrap)wrap.style.display='flex';
+  }else{
+    if(panel)panel.style.display='flex';
+    if(wrap)wrap.style.display='none';
+    mobTripsView='list';
+  }
+}
+function mobBackToTrips(){mobTripsView='list';updateMobTripsView();}
+
+/* ══════════════════════════════════════
+   TRIPS CRUD
+══════════════════════════════════════ */
+function doCreateTrip(name,loc,date,notes){
+  if(!name){showToast('Trip name is required!',true);return false;}
+  var trip={id:nextId(),name:name,location:loc,date:date,notes:notes,status:'planned',gear:[],createdAt:new Date().toISOString()};
+  trips.unshift(trip);persist();
+  selectedTripId=trip.id;
+  mobTripsView='detail';
+  renderStats();renderTripsPage();updateMobTripsView();showToast('Trip created!');
+  return true;
+}
+function createTrip(){
+  if(doCreateTrip(
+    document.getElementById('trip-name').value.trim(),
+    document.getElementById('trip-loc').value.trim(),
+    document.getElementById('trip-date').value,
+    document.getElementById('trip-notes').value.trim()
+  )){['trip-name','trip-loc','trip-date','trip-notes'].forEach(function(id){document.getElementById(id).value='';});}
+}
+function createTripMobile(){
+  if(doCreateTrip(
+    document.getElementById('m-trip-name').value.trim(),
+    document.getElementById('m-trip-loc').value.trim(),
+    document.getElementById('m-trip-date').value,
+    document.getElementById('m-trip-notes').value.trim()
+  )){['m-trip-name','m-trip-loc','m-trip-date','m-trip-notes'].forEach(function(id){document.getElementById(id).value='';});}
+}
+
+function deleteTrip(id){
+  var t=tripById(id);if(!t)return;
+  var msg=(t.status==='active'&&t.gear.length)?'This trip has loaded gear. Deleting will NOT return gear to inventory. Continue?':'Delete this trip?';
+  if(!confirm(msg))return;
+  trips=trips.filter(function(x){return x.id!==id;});
+  if(selectedTripId===id){selectedTripId=null;mobTripsView='list';}
+  persist();renderStats();renderTripsPage();updateMobTripsView();showToast('Trip deleted');
+}
+
+function setTripStatus(id,status){
+  var t=tripById(id);if(!t)return;
+  t.status=status;persist();renderStats();renderTripsPage();showToast('Status updated');
+}
+
+function removeGear(tripId,itemId){
+  var t=tripById(tripId);if(!t)return;
+  var g=t.gear.find(function(x){return x.itemId===itemId;});if(!g)return;
+  if(!confirm('Remove '+g.itemName+' from this trip? '+g.qty+' unit'+(g.qty!==1?'s':'')+' will return to inventory.'))return;
+  var item=itemById(itemId);if(item)item.qty+=g.qty;
+  t.gear=t.gear.filter(function(x){return x.itemId!==itemId;});
+  persist();renderAll();renderTripsPage();showToast('Gear returned to inventory');
+}
+
+function unloadTrip(id){
+  var t=tripById(id);if(!t)return;
+  var total=t.gear.reduce(function(s,g){return s+g.qty;},0);
+  if(!confirm('Return all '+total+' unit'+(total!==1?'s':'')+' to inventory and complete this trip?'))return;
+  t.gear.forEach(function(g){var item=itemById(g.itemId);if(item)item.qty+=g.qty;});
+  t.status='done';
+  persist();renderAll();renderTripsPage();showToast('Trip complete! All gear returned.');
+}
+
+function renderTripsPage(){renderTripsList();renderTripDetail();}
+
+function renderTripsList(){
+  function buildList(elId){
+    var el=document.getElementById(elId);if(!el)return;
+    if(!trips.length){el.innerHTML='<div style="text-align:center;padding:18px;color:var(--muted);font-size:12px">No trips yet</div>';return;}
+    var ordered=trips.slice().sort(function(a,b){var o={active:0,planned:1,done:2};return(o[a.status]||1)-(o[b.status]||1);});
+    el.innerHTML=ordered.map(function(t){
+      var units=t.gear.reduce(function(s,g){return s+g.qty;},0);
+      return'<div class="trip-thumb'+(selectedTripId===t.id?' selected':'')+'" onclick="selectTrip('+t.id+')">'
+        +'<div class="trip-thumb-name">'+esc(t.name)+'</div>'
+        +'<div class="trip-thumb-meta">'+(t.date?'<span>&#x1F4C5; '+t.date+'</span>':'')+(t.location?'<span>&#x1F4CD; '+esc(t.location)+'</span>':'')+'<span>&#x1F9F3; '+units+' unit'+(units!==1?'s':'')+'</span></div>'
+        +'<div class="trip-thumb-foot"><span class="trip-status '+tsCls(t.status)+'">'+tsLbl(t.status)+'</span><button class="trip-del-btn" onclick="event.stopPropagation();deleteTrip('+t.id+')" title="Delete">&#x2715;</button></div>'
+        +'</div>';
+    }).join('');
+  }
+  buildList('trips-list');
+  buildList('m-trips-list');
+}
+
+function selectTrip(id){
+  selectedTripId=id;
+  mobTripsView='detail';
+  renderTripsPage();
+  updateMobTripsView();
+}
+
+function renderTripDetail(){
+  var main=document.getElementById('trips-main');
+  if(!selectedTripId){
+    main.innerHTML='<div class="trip-empty"><div class="trip-empty-ico">&#x2708;&#xFE0F;</div><div class="trip-empty-title">Select or Create a Trip</div><div class="trip-empty-sub">Create a trip on the left,<br>load your equipment, and unload<br>everything when you return.</div></div>';
+    return;
+  }
+  var t=tripById(selectedTripId);if(!t){main.innerHTML='';return;}
+  var totalUnits=t.gear.reduce(function(s,g){return s+g.qty;},0);
+
+  var actions='';
+  if(t.status==='planned'){
+    actions='<button class="ibtn ibtn-primary" onclick="openLoadModal()">+ Load Equipment</button>'
+           +'<button class="ibtn ibtn-orange"  onclick="setTripStatus('+t.id+',\'active\')">Mark Active</button>'
+           +'<button class="ibtn ibtn-danger"  onclick="deleteTrip('+t.id+')">Delete</button>';
+  }else if(t.status==='active'){
+    actions='<button class="ibtn ibtn-primary" onclick="openLoadModal()">+ Load More</button>'
+           +'<button class="ibtn ibtn-success" onclick="unloadTrip('+t.id+')">&#x2713; Unload &amp; Complete</button>'
+           +'<button class="ibtn ibtn-danger"  onclick="deleteTrip('+t.id+')">Delete</button>';
+  }else{
+    actions='<button class="ibtn ibtn-ghost" onclick="deleteTrip('+t.id+')">Delete Trip</button>';
+  }
+
+  var gearHtml=!t.gear.length
+    ?'<div style="padding:22px;text-align:center;color:var(--muted);font-size:13px">No equipment loaded yet'+(t.status!=='done'?' &mdash; tap <strong>Load Equipment</strong>':'')+'.</div>'
+    :t.gear.map(function(g){
+      return'<div class="gear-row">'
+        +'<div style="flex:1"><div class="gear-name">'+esc(g.itemName)+'</div><div class="gear-cat">'+esc(g.itemCat||'')+'</div></div>'
+        +'<div class="gear-qty">'+g.qty+'u</div>'
+        +(t.status!=='done'?'<button class="btn-sm btn-sm-del" onclick="removeGear('+t.id+','+g.itemId+')">Remove</button>':'')
+        +'</div>';
+    }).join('');
+
+  main.innerHTML=
+    '<div class="trip-detail-hdr"><div>'
+    +'<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:5px"><div class="trip-detail-title">'+esc(t.name)+'</div><span class="trip-status '+tsCls(t.status)+'">'+tsLbl(t.status)+'</span></div>'
+    +'<div class="trip-detail-meta">'+(t.date?'&#x1F4C5; '+t.date+'<br>':'')+(t.location?'&#x1F4CD; '+esc(t.location)+'<br>':'')+(t.notes?'&#x1F4DD; '+esc(t.notes.slice(0,80))+(t.notes.length>80?'...':''):'')+'</div>'
+    +'</div><div class="trip-detail-actions">'+actions+'</div></div>'
+    +'<div class="sum-bar">'
+    +'<div class="sum-card"><div class="sum-val">'+t.gear.length+'</div><div class="sum-lbl">Items</div></div>'
+    +'<div class="sum-card"><div class="sum-val">'+totalUnits+'</div><div class="sum-lbl">Units</div></div>'
+    +'<div class="sum-card"><div class="sum-val">'+tsLbl(t.status)+'</div><div class="sum-lbl">Status</div></div>'
+    +'</div>'
+    +'<div class="section-card"><div class="sc-hdr"><div class="sc-title">Loaded Equipment</div>'
+    +(t.status==='done'?'<span style="font-size:11px;color:var(--ok)">&#x2713; All gear returned</span>':(totalUnits?'<span style="font-size:11px;color:var(--muted)">'+totalUnits+' unit'+(totalUnits!==1?'s':'')+' out</span>':''))
+    +'</div>'+gearHtml+'</div>';
+}
+
+/* ══════════════════════════════════════
+   LOAD MODAL
+══════════════════════════════════════ */
+function openLoadModal(){
+  if(!selectedTripId)return;
+  pickerSels={};
+  document.getElementById('load-search').value='';
+  renderPicker();
+  openModal('load-modal');
+}
+
+function renderPicker(){
+  var q=document.getElementById('load-search').value.toLowerCase();
+  var trip=tripById(selectedTripId);
+  var list=document.getElementById('picker-list');
+  var available=items.filter(function(i){return i.qty>0&&(!q||i.name.toLowerCase().includes(q)||(i.cat||'').toLowerCase().includes(q));});
+  if(!available.length){list.innerHTML='<div style="text-align:center;padding:18px;color:var(--muted);font-size:13px">No available equipment'+(q?' matching filter':'')+'</div>';updatePickerSummary();return;}
+  list.innerHTML=available.map(function(i){
+    var already=trip?trip.gear.find(function(g){return g.itemId===i.id;}):null;
+    var sel=pickerSels[i.id]||'';
+    return'<div class="picker-item'+(sel?' selected':'')+'" id="pr'+i.id+'">'
+      +'<div style="flex:1"><div class="picker-name">'+esc(i.name)+'</div><div class="picker-cat">'+esc(i.cat||'')+(already?' <span style="color:var(--warn)">('+already.qty+' on trip)</span>':'')+'</div></div>'
+      +'<div class="picker-avail">avail:'+i.qty+'</div>'
+      +'<input class="picker-qty" type="number" inputmode="numeric" min="0" max="'+i.qty+'" placeholder="0" value="'+sel+'" data-item-id="'+i.id+'" data-max="'+i.qty+'" oninput="onPickerInput(this)">'
+      +'</div>';
+  }).join('');
+  updatePickerSummary();
+}
+
+function onPickerInput(el){
+  var itemId=parseInt(el.getAttribute('data-item-id'),10);
+  var max=parseInt(el.getAttribute('data-max'),10);
+  var n=parseInt(el.value,10);
+  if(isNaN(n)||n<0)n=0;
+  if(n>max){n=max;el.value=max;}
+  var row=document.getElementById('pr'+itemId);
+  if(n>0){pickerSels[itemId]=n;if(row)row.classList.add('selected');}
+  else{delete pickerSels[itemId];if(row)row.classList.remove('selected');}
+  updatePickerSummary();
+}
+
+function updatePickerSummary(){
+  var el=document.getElementById('load-summary');
+  var keys=Object.keys(pickerSels).filter(function(k){return pickerSels[k]>0;});
+  if(!keys.length){el.textContent='Enter quantities above to select items.';el.style.color='var(--muted)';return;}
+  var total=keys.reduce(function(s,k){return s+pickerSels[k];},0);
+  el.textContent='\u2713 '+keys.length+' item'+(keys.length!==1?'s':'')+' \u2014 '+total+' unit'+(total!==1?'s':'')+' ready to load';
+  el.style.color='var(--ok)';
+}
+
+function confirmLoad(){
+  var keys=Object.keys(pickerSels).filter(function(k){return pickerSels[k]>0;});
+  if(!keys.length){showToast('Enter a quantity for at least one item',true);return;}
+  var t=tripById(selectedTripId);if(!t)return;
+  var loaded=0;
+  keys.forEach(function(idStr){
+    var itemId=parseInt(idStr,10);var qty=pickerSels[itemId];
+    var item=itemById(itemId);if(!item||qty<=0)return;
+    var actual=Math.min(qty,item.qty);if(actual<=0)return;
+    item.qty-=actual;
+    var existing=t.gear.find(function(g){return g.itemId===itemId;});
+    if(existing)existing.qty+=actual;
+    else t.gear.push({itemId:itemId,itemName:item.name,itemCat:item.cat||'',qty:actual});
+    loaded+=actual;
+  });
+  if(loaded===0){showToast('No stock available for selected items',true);return;}
+  if(t.status==='planned')t.status='active';
+  persist();closeModal('load-modal');renderAll();renderTripsPage();
+  showToast(loaded+' unit'+(loaded!==1?'s':'')+' loaded!');
+}
+
+/* ══════════════════════════════════════
+   SYNC MODAL
+══════════════════════════════════════ */
+function openSyncModal(){
+  document.getElementById('sync-key-display').textContent=syncKey;
+  document.getElementById('sync-key-input').value='';
+  document.getElementById('sync-join-status').textContent='';
+  openModal('sync-modal');
+}
+
+function genNewKey(){
+  if(!confirm('Generate a new sync key? This device will start fresh unless you import data first.'))return;
+  // save current locally just in case
+  var old=syncKey;
+  localStorage.setItem('ll_local_'+old,JSON.stringify({items:items,trips:trips,nid:_nid,ts:Date.now()}));
+  genSyncKey();
+  _nid=1;localStorage.setItem('ll_nid_'+syncKey,'1');
+  document.getElementById('sync-key-display').textContent=syncKey;
+  persist();startSyncPoll();showToast('New sync key created');
+}
+
+async function joinKey(){
+  var input=document.getElementById('sync-key-input').value.trim().toLowerCase();
+  var status=document.getElementById('sync-join-status');
+  if(!input){status.textContent='Please enter a key.';return;}
+  if(input===syncKey){status.textContent='That is already your current key.';return;}
+  status.textContent='Joining...';
+  // Switch key
+  localStorage.setItem(SYNC_KEY_LS,input);
+  syncKey=input;
+  _nid=parseInt(localStorage.getItem('ll_nid_'+syncKey)||'1',10);
+  document.getElementById('sync-key-display').textContent=syncKey;
+  await cloudLoad();
+  if(!items.length)seedData();
+  startSyncPoll();
+  status.textContent='';
+  closeModal('sync-modal');
+  showToast('Joined sync key: '+syncKey);
+}
+
+/* ══════════════════════════════════════
+   MODAL / TOAST / EVENTS
+══════════════════════════════════════ */
+function openModal(id){document.getElementById(id).classList.add('open');document.body.style.overflow='hidden';}
+function closeModal(id){document.getElementById(id).classList.remove('open');document.body.style.overflow='';}
+
+function showToast(msg,isError){
+  var old=document.querySelector('.toast');if(old)old.remove();
+  var t=document.createElement('div');
+  t.className='toast'+(isError?' error':'');
+  t.textContent=msg;
+  document.body.appendChild(t);
+  setTimeout(function(){t.remove();},2800);
+}
+
+['edit-modal','load-modal','sync-modal'].forEach(function(id){
+  document.getElementById(id).addEventListener('click',function(e){if(e.target===this)closeModal(id);});
+});
+document.addEventListener('keydown',function(e){
+  if(e.key==='Escape')['edit-modal','load-modal','sync-modal'].forEach(closeModal);
+});
+window.addEventListener('resize',function(){updateMobTripsView();});
+
+/* ══════════════════════════════════════
+   START
+══════════════════════════════════════ */
+boot();
+</script>
+</body>
+</html>
